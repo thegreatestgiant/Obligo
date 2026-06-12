@@ -49,7 +49,7 @@ function Register() {
       });
 
       if (response.ok) {
-        navigate("/app", { replace: true });
+        navigate("/login", { replace: true });
       } else {
         setErrors({ submit: "Registration failed. Please try again." });
       }

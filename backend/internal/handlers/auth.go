@@ -124,6 +124,7 @@ func (cfg *App) Login(w http.ResponseWriter, r *http.Request) {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPass), []byte(body.Password))
 	if err != nil {
 		log.Printf("Bad password: %v", err)
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
