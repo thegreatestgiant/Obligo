@@ -62,8 +62,5 @@ export function useAuth() {
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
-  const user = context.user;
-  console.log(user);
-  console.log(user?.Donation_Percent);
   return context;
 }

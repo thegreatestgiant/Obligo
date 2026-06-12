@@ -78,7 +78,6 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 	entry = cfg.getEntry(user_id)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "Recieved Entry")
 	json.NewEncoder(w).Encode(entry)
@@ -124,7 +123,6 @@ func (cfg *App) getEntries(w http.ResponseWriter, r *http.Request) {
 
 func end(w http.ResponseWriter, r *http.Request, entries []Ledger) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "The Ledger entries")
 	json.NewEncoder(w).Encode(entries)

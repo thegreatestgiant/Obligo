@@ -132,7 +132,6 @@ func (cfg *App) Login(w http.ResponseWriter, r *http.Request) {
 	cfg.generateTokensWithCookies(w, user_id)
 
 	// w.Header().Set("Content-Type", "application/json")
-	// w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, `"message": "Login successful"}`)
 	fmt.Fprintln(w, "Set jwtCookie and RefreshCookie")
