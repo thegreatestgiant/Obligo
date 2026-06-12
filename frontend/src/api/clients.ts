@@ -36,4 +36,6 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ amount, ledger_entry: type, description }),
     }),
+  getEntry: (id: string) => fetchAPI(`/entries/${id}`, { method: "GET" }),
+  deleteEntry: (id: string) => fetchAPI(`/entries/${id}`, { method: "DELETE" }),
 };

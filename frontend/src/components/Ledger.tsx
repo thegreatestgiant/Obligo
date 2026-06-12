@@ -5,7 +5,7 @@ import { formatCurrency } from "../utils/formatter";
 import { api } from "../api/clients";
 
 type Entry = {
-  id: string;
+  transaction_id: string;
   amount: number;
   ledger_entry: "paycheck" | "donation";
   description: string;
@@ -22,6 +22,21 @@ export default function Ledger() {
   const itemsPerPage = 8;
   const showToast = useToast();
   const { checkAuth } = useAuth();
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await api.deleteEntry(id);
+      if (res.ok) {
+        showToast("Transaction deleted.", "success");
+        await fetchEntries(); // Refresh data
+        await checkAuth(true); // Sync global dashboard numbers
+      } else {
+        showToast("Failed to delete.", "error");
+      }
+    } catch (err) {
+      showToast("Network error.", "error");
+    }
+  };
 
   // Fetch past entries
   const fetchEntries = async () => {
@@ -143,11 +158,12 @@ export default function Ledger() {
       <div className="lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-white">Recent History</h2>
-          {/* Page indicator (optional) */}
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-            Page {currentPage} /{" "}
-            {Math.max(1, Math.ceil(entries.length / itemsPerPage))}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+              Page {currentPage} /{" "}
+              {Math.max(1, Math.ceil(entries.length / itemsPerPage))}
+            </span>
+          </div>
         </div>
 
         {entries.length === 0 ? (
@@ -171,10 +187,10 @@ export default function Ledger() {
                       (currentPage - 1) * itemsPerPage,
                       currentPage * itemsPerPage,
                     )
-                    .map((entry, index) => (
+                    .map((entry) => (
                       <tr
-                        key={index}
-                        className="text-slate-300 hover:bg-slate-800/20 transition-colors"
+                        key={entry.transaction_id}
+                        className="group text-slate-300 hover:bg-slate-800/20 transition-colors"
                       >
                         <td className="py-4">
                           {new Date(
@@ -184,7 +200,11 @@ export default function Ledger() {
                         <td className="py-4">
                           <span className="flex items-center gap-2">
                             <span
-                              className={`w-2 h-2 rounded-full ${entry.ledger_entry === "paycheck" ? "bg-emerald-500" : "bg-indigo-500"}`}
+                              className={`w-2 h-2 rounded-full ${
+                                entry.ledger_entry === "paycheck"
+                                  ? "bg-emerald-500"
+                                  : "bg-indigo-500"
+                              }`}
                             ></span>
                             {entry.description ||
                               (entry.ledger_entry === "paycheck"
@@ -192,11 +212,38 @@ export default function Ledger() {
                                 : "Donation")}
                           </span>
                         </td>
-                        <td
-                          className={`py-4 text-right font-medium ${entry.ledger_entry === "paycheck" ? "text-emerald-400" : "text-indigo-400"}`}
-                        >
-                          {entry.ledger_entry === "paycheck" ? "+" : "-"}
-                          {formatCurrency(entry.amount)}
+                        <td className="py-4 text-right flex items-center justify-end gap-4">
+                          <span
+                            className={
+                              entry.ledger_entry === "paycheck"
+                                ? "text-emerald-400"
+                                : "text-indigo-400"
+                            }
+                          >
+                            {entry.ledger_entry === "paycheck" ? "+" : "-"}
+                            {formatCurrency(entry.amount)}
+                          </span>
+
+                          {/* Trash Can Icon */}
+                          <button
+                            onClick={() => handleDelete(entry.transaction_id)}
+                            className={`text-slate-600 hover:text-red-500 transition-opacity opacity-0 group-hover:opacity-100`}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
                         </td>
                       </tr>
                     ))}

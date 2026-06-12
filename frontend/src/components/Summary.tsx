@@ -53,8 +53,7 @@ export default function Summary() {
         />
       </div>
 
-      {/* TIER 2: INTERACTIVE & TREND DATA */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-0">
         <GoalWidget totalTarget={totalOwed} totalDonated={totalDonated} />
         <IndexAnchor data={chartData} title="Cumulative Cashflow Overview" />
       </div>
