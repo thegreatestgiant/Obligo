@@ -1,0 +1,37 @@
+CREATE TABLE Users (
+  user_id UUID PRIMARY KEY,
+  email text,
+  username text NOT NULL,
+  password_hash VARCHAR(72) NOT NULL,
+  date_joined TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  donation_percentage INT DEFAULT 10
+);
+
+CREATE type entry AS enum ('paycheck', 'donation');
+
+CREATE TABLE Ledgers (
+  user_id UUID NOT NULL,
+  tranaction_id SERIAL PRIMARY KEY,
+  ledger_entry entry,
+  amount DECIMAL(18, 2) NOT NULL,
+  charity_owed DECIMAL(18, 2),
+  charity_fulfilled DECIMAL(18, 2),
+  transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES Users (user_id)
+);
+
+CREATE TABLE denylist (
+  jti uuid PRIMARY KEY,
+  expires_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE refresh_tokens (
+  token text PRIMARY KEY,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  user_id UUID NOT NULL REFERENCES users (user_id) ON DELETE CASCADE,
+  expires_at TIMESTAMP NOT NULL,
+  revoked_at TIMESTAMP
+);

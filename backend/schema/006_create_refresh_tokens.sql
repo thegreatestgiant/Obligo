@@ -1,8 +1,0 @@
-CREATE TABLE refresh_tokens (
-  token text PRIMARY KEY,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  user_id UUID NOT NULL REFERENCES users (user_id) ON DELETE CASCADE,
-  expires_at TIMESTAMP NOT NULL,
-  revoked_at TIMESTAMP
-);

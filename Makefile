@@ -21,3 +21,15 @@ migrate-dev:
 
 migrate-prod: 
 	psql $(DB_PROD_URL) -f backend/schema/$(FILE)
+
+db-wipe-dev:
+	psql $(DB_DEV_URL) -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+db-setup-dev: db-wipe-dev
+	psql $(DB_DEV_URL) -f backend/schema/000_official_look.sql
+
+db-wipe-prod:
+	psql $(DB_PROD_URL) -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+db-setup-prod: db-wipe-prod
+	psql $(DB_PROD_URL) -f backend/schema/000_official_look.sql
