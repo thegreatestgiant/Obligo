@@ -1,35 +1,63 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Navbar from "./Navbar";
+import { useAuth } from "../AuthContext";
+import { useToast, ToastComponent } from "./Toast";
 
 function Settings() {
   const [percent, setPercent] = useState("");
   const [passwords, setPasswords] = useState({ old: "", new: "" });
+  const { showToast, ToastComponent } = useToast(); // Initialize toast
 
   const handleUpdatePercent = async () => {
-    await fetch("http://localhost:1234/users/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ donation_percentage: parseFloat(percent) }),
-      credentials: "include",
-    });
-    alert("Updated!");
+    try {
+      const response = await fetch("http://localhost:1234/users/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ donation_percentage: parseFloat(percent) }),
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        showToast("Donation percentage updated!", "success"); // Success Toast
+      } else {
+        showToast("Failed to update percentage.", "error"); // Error Toast
+      }
+    } catch (err) {
+      showToast("Server connection error.", "error");
+    }
   };
 
   const handleChangePassword = async () => {
-    await fetch("http://localhost:1234/users/change-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        old_password: passwords.old,
-        new_password: passwords.new,
-      }),
-      credentials: "include",
-    });
-    alert("Password updated!");
+    try {
+      const response = await fetch(
+        "http://localhost:1234/users/change-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            old_password: passwords.old,
+            new_password: passwords.new,
+          }),
+          credentials: "include",
+        },
+      );
+
+      if (response.ok) {
+        showToast("Password updated successfully!", "success");
+        setPasswords({ old: "", new: "" });
+      } else {
+        showToast("Failed to update password.", "error");
+      }
+    } catch (err) {
+      showToast("Server connection error.", "error");
+    }
   };
+
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
+      {ToastComponent}
       <Navbar />
       <div className="max-w-2xl mx-auto p-10 space-y-12">
         {/* Donation Settings */}
@@ -40,7 +68,7 @@ function Settings() {
             value={percent}
             onChange={(e) => setPercent(e.target.value)}
             className="bg-slate-950 border border-slate-700 p-2 rounded w-full mb-4"
-            placeholder="10"
+            placeholder={user?.Donation_Percent?.toString() ?? "10"}
           />
           <button
             onClick={handleUpdatePercent}
@@ -56,6 +84,7 @@ function Settings() {
           <input
             type="password"
             placeholder="Old Password"
+            value={passwords.old}
             onChange={(e) =>
               setPasswords({ ...passwords, old: e.target.value })
             }
@@ -64,6 +93,7 @@ function Settings() {
           <input
             type="password"
             placeholder="New Password"
+            value={passwords.new}
             onChange={(e) =>
               setPasswords({ ...passwords, new: e.target.value })
             }

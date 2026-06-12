@@ -3,12 +3,12 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 // 1. Update the shape to match your Go 'summary' struct exactly!
 // (Assuming your Go struct uses the exact field names for JSON)
 type UserSummary = {
-  TotalOwed: number;
-  DonationPercent: number;
-  PercentFulFilled: number;
-  RemainingObligation: number;
-  Donated: number;
-  Earned: number;
+  Total_Owed: number; // Change to match Go
+  Donation_Percent: number; // Add underscore
+  Percent_Fulfilled: number; // Add underscore
+  Remaining_Obligation: number; // Add underscore
+  Total_Donated: number; // Add underscore
+  Total_Earned: number; // Add underscore
 };
 
 type AuthContextType = {
@@ -62,5 +62,8 @@ export function useAuth() {
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
+  const user = context.user;
+  console.log(user);
+  console.log(user?.Donation_Percent);
   return context;
 }
