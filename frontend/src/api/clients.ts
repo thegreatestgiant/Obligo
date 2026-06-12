@@ -1,0 +1,41 @@
+const BASE_URL = "http://localhost:1234";
+
+// Centralized fetch helper to automatically handle credentials and JSON
+async function fetchAPI(endpoint: string, options: RequestInit = {}) {
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+    credentials: "include", // Ensures our Go cookies are always sent!
+  });
+
+  // We handle the 204 No Content here so our components never crash!
+  if (response.status === 204) return null;
+
+  if (!response.ok) {
+    throw new Error(`API Error: ${response.status}`);
+  }
+
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
+}
+
+export const api = {
+  // Auth & User
+  logout: () => fetchAPI("/logout", { method: "POST" }),
+  getSummary: () => fetchAPI("/summary", { method: "GET" }),
+
+  // Ledger Entries
+  getEntries: () => fetchAPI("/entries", { method: "GET" }),
+  createEntry: (
+    amount: number,
+    type: "paycheck" | "donation",
+    description: string,
+  ) =>
+    fetchAPI("/entries", {
+      method: "POST",
+      body: JSON.stringify({ amount, ledger_entry: type, description }),
+    }),
+};

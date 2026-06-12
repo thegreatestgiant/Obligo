@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "./Toast";
 import { useAuth } from "../auth/AuthContext";
+import { formatCurrency } from "../utils/formatter";
 
 type Entry = {
   id: string;
@@ -196,8 +197,8 @@ export default function Ledger() {
                     <td
                       className={`py-4 text-right font-medium ${entry.ledger_entry === "paycheck" ? "text-emerald-400" : "text-indigo-400"}`}
                     >
-                      {entry.ledger_entry === "paycheck" ? "+" : "-"}$
-                      {entry.amount.toFixed(2)}
+                      {entry.ledger_entry === "paycheck" ? "+" : "-"}
+                      {formatCurrency(entry.amount)}
                     </td>
                   </tr>
                 ))}
