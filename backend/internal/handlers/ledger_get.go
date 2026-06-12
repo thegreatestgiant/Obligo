@@ -56,9 +56,6 @@ func (cfg *App) getAnEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var entry Ledger
-	query := `SELECT transaction_id, ledger_entry, amount, COALESCE(description,'') AS description, charity_owed, charity_fulfilled, transaction_date FROM Ledgers WHERE user_id=$1 AND transaction_id=$2 ORDER BY transaction_date DESC`
-
 	id := r.PathValue("id")
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
@@ -66,19 +63,5 @@ func (cfg *App) getAnEntry(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Fetching entry ID: %s for User: %s", id, user_id)
 
-	row := cfg.DB.QueryRow(query, user_id, id)
-	if err := row.Scan(
-		&entry.TransactionID,
-		&entry.LedgerEntry,
-		&entry.Amount,
-		&entry.Description,
-		&entry.CharityOwed,
-		&entry.CharityFulfilled,
-		&entry.TransactionDate); err != nil {
-		http.Error(w, "Entry doesn't exist", http.StatusNotFound)
-		log.Printf("Couldn't scan row: %v", err)
-		return
-	}
-
-	end(w, r, []Ledger{entry})
+	end(w, r, []Ledger{cfg.getEntry(id)})
 }

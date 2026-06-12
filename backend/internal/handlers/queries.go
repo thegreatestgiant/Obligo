@@ -81,14 +81,25 @@ func (cfg *App) getDonationPercent(user_id uuid.UUID) float64 {
 	return percent
 }
 
-func (cfg *App) getEntry(user_id uuid.UUID) Ledger {
-	query := "SELECT ledger_entry, amount, charity_owed, charity_fulfilled FROM Ledgers WHERE user_id=$1 ORDER BY transaction_date DESC Limit 1"
+func (cfg *App) getEntry(transaction_id string) Ledger {
+	query := `SELECT transaction_id, ledger_entry, amount, COALESCE(description,'') AS description,
+	charity_owed, charity_fulfilled 
+	FROM Ledgers 
+	WHERE transaction_id=$1 
+	ORDER BY transaction_date DESC 
+	Limit 1`
 	var entry Ledger
 
-	row := cfg.DB.QueryRow(query, user_id)
-	if err := row.Scan(&entry.LedgerEntry, &entry.Amount, &entry.CharityOwed, &entry.CharityFulfilled); err != nil {
+	row := cfg.DB.QueryRow(query, transaction_id)
+	if err := row.Scan(
+		&entry.TransactionID,
+		&entry.LedgerEntry,
+		&entry.Amount,
+		&entry.Description,
+		&entry.CharityOwed,
+		&entry.CharityFulfilled); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("Bad uuid: %v. Or the date was wrong: %v", user_id)
+			log.Printf("Bad transaction_id: %v. Or the date was wrong: %v", transaction_id)
 			return entry
 		}
 		log.Default().Printf("No such Entry: %v", err)

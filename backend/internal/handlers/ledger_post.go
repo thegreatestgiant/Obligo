@@ -19,7 +19,10 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlInsert := "INSERT INTO Ledgers (user_id, ledger_entry, amount, description, charity_owed, charity_fulfilled) VALUES ($1, $2, $3, $4, $5, $6)"
+	sqlInsert := `INSERT INTO Ledgers 
+	(user_id, ledger_entry, amount, description, charity_owed, charity_fulfilled) 
+	VALUES ($1, $2, $3, $4, $5, $6)
+	RETURNING transaction_id`
 	entry := Ledger{}
 
 	json.NewDecoder(r.Body).Decode(&entry)
@@ -45,15 +48,24 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Recieved Donation, fulfilled %.2f%%", fulfilled)
 	}
 
-	// NOTE: Can make this get back transaction id, and update getEntry
-	_, err := cfg.DB.Query(sqlInsert, user_id, entry.LedgerEntry, entry.Amount, entry.Description, owed, fulfilled)
+	var newIDInt int
+	err := cfg.DB.QueryRow(
+		sqlInsert,
+		user_id,
+		entry.LedgerEntry,
+		entry.Amount,
+		entry.Description,
+		owed,
+		fulfilled,
+	).Scan(&newIDInt)
 	if err != nil {
 		http.Error(w, "Bad Query", http.StatusBadRequest)
 		log.Printf("Couldn't add to db: %v", err)
 		return
 	}
+	newID := string(newIDInt)
 
-	entry = cfg.getEntry(user_id)
+	entry = cfg.getEntry(newID)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
