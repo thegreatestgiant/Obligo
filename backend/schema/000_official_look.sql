@@ -13,7 +13,7 @@ CREATE type entry AS enum ('paycheck', 'donation');
 
 CREATE TABLE Ledgers (
   user_id UUID NOT NULL,
-  tranaction_id SERIAL PRIMARY KEY,
+  transaction_id SERIAL PRIMARY KEY,
   ledger_entry entry,
   amount DECIMAL(18, 2) NOT NULL,
   description VARCHAR(),
