@@ -17,7 +17,7 @@ export default function KPICard({
   const styles = {
     earned: "border-emerald-500 text-emerald-400",
     donated: "border-indigo-500 text-indigo-300",
-    obligation: "border-red-500 text-white",
+    obligation: "border-red-500 text-red-500/70",
   };
 
   return (
@@ -44,13 +44,15 @@ export default function KPICard({
 
       <div className="relative z-10">
         <p
-          className={`text-xs font-black uppercase tracking-[0.2em] mb-2 ${intent === "obligation" ? "text-red-500" : "text-slate-400"}`}
+          className={
+            "text-xs font-black uppercase tracking-[0.2em] mb-2 text-slate-400"
+          }
         >
           {title}
         </p>
         <p className="text-4xl font-black">{value}</p>
         {subtext && (
-          <p className="text-xs text-slate-400 mt-2 font-medium">{subtext}</p>
+          <p className="text-xs text-slate-500 mt-2 font-medium">{subtext}</p>
         )}
       </div>
     </div>

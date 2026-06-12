@@ -2,7 +2,6 @@ import { useState } from "react";
 import { PieChart, Pie, Tooltip, ResponsiveContainer } from "recharts";
 import { formatCurrency } from "../utils/formatter";
 
-// We define the props the widget needs to work!
 interface GoalWidgetProps {
   totalTarget: number;
   totalDonated: number;
