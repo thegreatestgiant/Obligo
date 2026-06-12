@@ -3,7 +3,7 @@ import { useToast } from "./Toast";
 
 function Navbar() {
   const navigate = useNavigate();
-  const { showToast, ToastComponent } = useToast(); // Initialize toast
+  const showToast = useToast(); // Initialize toast
 
   const logout = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
@@ -36,7 +36,6 @@ function Navbar() {
 
   return (
     <nav className="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center">
-      {ToastComponent}
       <div className="text-xl font-bold text-white">MaaserCalc</div>
       <div className="flex gap-4">
         <Link to="/dashboard" className="text-slate-300 hover:text-white">

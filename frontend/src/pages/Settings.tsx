@@ -6,7 +6,7 @@ import { useToast } from "../components/Toast";
 function Settings() {
   const [percent, setPercent] = useState("");
   const [passwords, setPasswords] = useState({ old: "", new: "" });
-  const { showToast, ToastComponent } = useToast(); // Initialize toast
+  const showToast = useToast();
 
   const handleUpdatePercent = async () => {
     try {
@@ -57,7 +57,6 @@ function Settings() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {ToastComponent}
       <Navbar />
       <div className="max-w-2xl mx-auto p-10 space-y-12">
         {/* Donation Settings */}

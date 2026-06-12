@@ -1,30 +1,41 @@
-import { useState, useEffect } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 
-export function useToast() {
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
+type ToastType = { message: string; type: "success" | "error" };
+type ToastContextType = (message: string, type?: "success" | "error") => void;
+
+const ToastContext = createContext<ToastContextType | undefined>(undefined);
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toast, setToast] = useState<ToastType | null>(null);
 
   const showToast = (
     message: string,
     type: "success" | "error" = "success",
   ) => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000); // Fades out after 3s
+    setTimeout(() => setToast(null), 3000);
   };
 
-  const ToastComponent = toast ? (
-    <div
-      className={`fixed top-5 right-5 px-6 py-3 rounded-lg shadow-2xl border transition-all duration-300 ease-in-out opacity-100 ${
-        toast.type === "success"
-          ? "bg-emerald-900 border-emerald-700 text-emerald-100"
-          : "bg-red-900 border-red-700 text-red-100"
-      }`}
-    >
-      {toast.message}
-    </div>
-  ) : null;
-
-  return { showToast, ToastComponent };
+  return (
+    <ToastContext.Provider value={showToast}>
+      {children}
+      {toast && (
+        <div
+          className={`fixed top-5 right-5 px-6 py-3 rounded-lg shadow-2xl border transition-all duration-300 z-50 ${
+            toast.type === "success"
+              ? "bg-emerald-900 border-emerald-700 text-emerald-100"
+              : "bg-red-900 border-red-700 text-red-100"
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
+    </ToastContext.Provider>
+  );
 }
+
+export const useToast = () => {
+  const context = useContext(ToastContext);
+  if (!context) throw new Error("useToast must be used within a ToastProvider");
+  return context;
+};
