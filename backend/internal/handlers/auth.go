@@ -125,6 +125,7 @@ func (cfg *App) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Bad password: %v", err)
 		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprintln(w, `"message": "Login failed"}`)
 		return
 	}
 
@@ -133,5 +134,6 @@ func (cfg *App) Login(w http.ResponseWriter, r *http.Request) {
 	// w.Header().Set("Content-Type", "application/json")
 	// w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, `"message": "Login successful"}`)
 	fmt.Fprintln(w, "Set jwtCookie and RefreshCookie")
 }

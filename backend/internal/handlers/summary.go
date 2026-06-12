@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math"
 	"net/http"
@@ -45,9 +44,9 @@ func (cfg *App) summary(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	// w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "Summary")
+	// fmt.Fprintln(w, "Summary")
 	json.NewEncoder(w).Encode(summary)
 	log.Printf("Summary of charity status: %v", summary)
 }
