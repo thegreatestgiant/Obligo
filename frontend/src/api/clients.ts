@@ -12,14 +12,12 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   });
 
   // We handle the 204 No Content here so our components never crash!
-  if (response.status === 204) return null;
 
   if (!response.ok) {
     throw new Error(`API Error: ${response.status}`);
   }
 
-  const text = await response.text();
-  return text ? JSON.parse(text) : null;
+  return response;
 }
 
 export const api = {

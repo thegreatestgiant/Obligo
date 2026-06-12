@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "./Toast";
 import { useAuth } from "../auth/AuthContext";
 import { formatCurrency } from "../utils/formatter";
+import { api } from "../api/clients";
 
 type Entry = {
   id: string;
@@ -17,29 +18,22 @@ export default function Ledger() {
   const [type, setType] = useState<"paycheck" | "donation">("paycheck");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
   const showToast = useToast();
   const { checkAuth } = useAuth();
 
   // Fetch past entries
   const fetchEntries = async () => {
-    try {
-      const res = await fetch("http://localhost:1234/entries", {
-        credentials: "include",
-      });
-      if (res.ok) {
-        if (res.status === 204) {
-          setEntries([]);
-          return;
-        }
-
-        // Safely parse the text
-        const text = await res.text();
-        const data = text ? JSON.parse(text) : [];
-        setEntries(data || []);
+    const res = await api.getEntries();
+    if (res.ok) {
+      if (res.status === 204) {
+        setEntries([]);
+        return;
       }
-    } catch (err) {
-      console.error("Failed to fetch entries", err);
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : [];
+      setEntries(data || []);
     }
   };
 
@@ -47,27 +41,18 @@ export default function Ledger() {
     fetchEntries();
   }, []);
 
-  // Handle adding a new entry
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("http://localhost:1234/entries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: parseFloat(amount),
-          ledger_entry: type,
-          description: description,
-        }),
-        credentials: "include",
-      });
+      const res = await api.createEntry(parseFloat(amount), type, description);
 
       if (res.ok) {
         showToast("Entry added successfully!", "success");
         setAmount("");
         setDescription("");
+        setCurrentPage(1);
 
         // Refresh the table and the global dashboard numbers!
         await fetchEntries();
@@ -154,57 +139,98 @@ export default function Ledger() {
         </form>
       </div>
 
-      {/* RIGHT COLUMN: Recent History */}
+      {/* RIGHT COLUMN: Recent History (Paginated) */}
       <div className="lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm">
-        <h2 className="text-lg font-semibold text-white mb-4">
-          Recent History
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-white">Recent History</h2>
+          {/* Page indicator (optional) */}
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            Page {currentPage} /{" "}
+            {Math.max(1, Math.ceil(entries.length / itemsPerPage))}
+          </span>
+        </div>
 
         {entries.length === 0 ? (
           <div className="text-center py-10 text-slate-500">
             No entries found. Log a paycheck or donation to get started!
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-800 text-slate-400">
-                  <th className="pb-3 font-medium">Date</th>
-                  <th className="pb-3 font-medium">Description</th>
-                  <th className="pb-3 font-medium text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/50">
-                {entries.map((entry, index) => (
-                  <tr
-                    key={index}
-                    className="text-slate-300 hover:bg-slate-800/20 transition-colors"
-                  >
-                    <td className="py-4">
-                      {new Date(entry.transaction_date).toLocaleDateString()}
-                    </td>
-                    <td className="py-4">
-                      <span className="flex items-center gap-2">
-                        <span
-                          className={`w-2 h-2 rounded-full ${entry.ledger_entry === "paycheck" ? "bg-emerald-500" : "bg-indigo-500"}`}
-                        ></span>
-                        {entry.description ||
-                          (entry.ledger_entry === "paycheck"
-                            ? "Income"
-                            : "Donation")}
-                      </span>
-                    </td>
-                    <td
-                      className={`py-4 text-right font-medium ${entry.ledger_entry === "paycheck" ? "text-emerald-400" : "text-indigo-400"}`}
-                    >
-                      {entry.ledger_entry === "paycheck" ? "+" : "-"}
-                      {formatCurrency(entry.amount)}
-                    </td>
+          <>
+            <div className="overflow-x-auto min-h-[400px]">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400">
+                    <th className="pb-3 font-medium">Date</th>
+                    <th className="pb-3 font-medium">Description</th>
+                    <th className="pb-3 font-medium text-right">Amount</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-800/50">
+                  {entries
+                    .slice(
+                      (currentPage - 1) * itemsPerPage,
+                      currentPage * itemsPerPage,
+                    )
+                    .map((entry, index) => (
+                      <tr
+                        key={index}
+                        className="text-slate-300 hover:bg-slate-800/20 transition-colors"
+                      >
+                        <td className="py-4">
+                          {new Date(
+                            entry.transaction_date,
+                          ).toLocaleDateString()}
+                        </td>
+                        <td className="py-4">
+                          <span className="flex items-center gap-2">
+                            <span
+                              className={`w-2 h-2 rounded-full ${entry.ledger_entry === "paycheck" ? "bg-emerald-500" : "bg-indigo-500"}`}
+                            ></span>
+                            {entry.description ||
+                              (entry.ledger_entry === "paycheck"
+                                ? "Income"
+                                : "Donation")}
+                          </span>
+                        </td>
+                        <td
+                          className={`py-4 text-right font-medium ${entry.ledger_entry === "paycheck" ? "text-emerald-400" : "text-indigo-400"}`}
+                        >
+                          {entry.ledger_entry === "paycheck" ? "+" : "-"}
+                          {formatCurrency(entry.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-800">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-all disabled:opacity-30"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) =>
+                    Math.min(
+                      prev + 1,
+                      Math.ceil(entries.length / itemsPerPage),
+                    ),
+                  )
+                }
+                disabled={
+                  currentPage >= Math.ceil(entries.length / itemsPerPage)
+                }
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-all disabled:opacity-30"
+              >
+                Next
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>
