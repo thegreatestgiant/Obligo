@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"math"
 	"net/http"
@@ -48,7 +49,7 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Recieved Donation, fulfilled %.2f%%", fulfilled)
 	}
 
-	var newIDInt int
+	var newID int
 	err := cfg.DB.QueryRow(
 		sqlInsert,
 		user_id,
@@ -57,18 +58,21 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		entry.Description,
 		owed,
 		fulfilled,
-	).Scan(&newIDInt)
+	).Scan(&newID)
 	if err != nil {
 		http.Error(w, "Bad Query", http.StatusBadRequest)
 		log.Printf("Couldn't add to db: %v", err)
 		return
 	}
-	newID := string(newIDInt)
 
-	entry = cfg.getEntry(newID)
+	entry, err = cfg.getEntry(fmt.Sprintf("%d", newID))
+	if err != nil {
+		log.Printf("Error fetching entry: %v", err)
+		http.Error(w, "Entry not found", http.StatusNotFound)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	// fmt.Fprintln(w, "Recieved Entry")
 	json.NewEncoder(w).Encode(entry)
 }

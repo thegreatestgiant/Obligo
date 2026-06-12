@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 
@@ -81,7 +82,7 @@ func (cfg *App) getDonationPercent(user_id uuid.UUID) float64 {
 	return percent
 }
 
-func (cfg *App) getEntry(transaction_id string) Ledger {
+func (cfg *App) getEntry(transaction_id string) (Ledger, error) {
 	query := `SELECT transaction_id, ledger_entry, amount, COALESCE(description,'') AS description,
 	charity_owed, charity_fulfilled 
 	FROM Ledgers 
@@ -91,23 +92,25 @@ func (cfg *App) getEntry(transaction_id string) Ledger {
 	var entry Ledger
 
 	row := cfg.DB.QueryRow(query, transaction_id)
-	if err := row.Scan(
+	err := row.Scan(
 		&entry.TransactionID,
 		&entry.LedgerEntry,
 		&entry.Amount,
 		&entry.Description,
 		&entry.CharityOwed,
-		&entry.CharityFulfilled); err != nil {
+		&entry.CharityFulfilled,
+	)
+	if err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("Bad transaction_id: %v. Or the date was wrong: %v", transaction_id)
-			return entry
+			// This specifically handles the "No result found" case
+			return entry, fmt.Errorf("no entry found with ID: %s", transaction_id)
 		}
-		log.Default().Printf("No such Entry: %v", err)
-		return entry
+		// This handles database connectivity or syntax errors
+		return entry, fmt.Errorf("database query failed: %w", err)
 	}
 
 	log.Printf("Entry: %v", entry)
-	return entry
+	return entry, nil
 }
 
 func (cfg *App) getAmountOwed(user_id uuid.UUID) float64 {
