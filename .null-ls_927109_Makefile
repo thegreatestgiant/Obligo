@@ -16,11 +16,7 @@ logs:
 run:
 	go run -C backend .
 
-migrate-dev:
-	@if [ -z "$(FILE)" ]; then \
-		echo "Error: FILE is not set. Usage: make migrate-dev FILE=filename.sql"; \
-		exit 1; \
-	fi
+migrate-dev: 
 	psql $(DB_DEV_URL) -f backend/schema/$(FILE)
 
 migrate-prod: 

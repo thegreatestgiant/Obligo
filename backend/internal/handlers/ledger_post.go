@@ -45,6 +45,7 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Recieved Donation, fulfilled %.2f%%", fulfilled)
 	}
 
+	// NOTE: Can make this get back transaction id, and update getEntry
 	_, err := cfg.DB.Query(sqlInsert, user_id, entry.LedgerEntry, entry.Amount, entry.Description, owed, fulfilled)
 	if err != nil {
 		http.Error(w, "Bad Query", http.StatusBadRequest)

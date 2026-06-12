@@ -19,7 +19,7 @@ func (cfg *App) deleteEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlSelect := "SELECT count(*) AS amnt FROM Ledgers WHERE tranaction_id=$1 AND user_id=$2"
+	sqlSelect := "SELECT count(*) AS amnt FROM Ledgers WHERE transaction_id=$1 AND user_id=$2"
 	var amnt int
 
 	row := cfg.DB.QueryRow(sqlSelect, id, user_id)
@@ -29,7 +29,7 @@ func (cfg *App) deleteEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlDelete := "DELETE FROM Ledgers WHERE tranaction_id=$1 AND user_id=$2"
+	sqlDelete := "DELETE FROM Ledgers WHERE transaction_id=$1 AND user_id=$2"
 	result, err := cfg.DB.Exec(sqlDelete, id, user_id)
 	if err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
