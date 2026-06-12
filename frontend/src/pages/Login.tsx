@@ -8,7 +8,11 @@ function Login() {
     submit?: string;
   };
 
-  const INITIAL_ERRORS: ErrorType = {};
+  const INITIAL_ERRORS: ErrorType = {
+    email: "",
+    username: "",
+    password: "",
+  };
 
   const [formData, setFormData] = useState(INITIAL_ERRORS);
 
@@ -17,7 +21,8 @@ function Login() {
   const navigate = useNavigate();
 
   const handleChange = (e: { target: { name: any; value: any } }) => {
-    const { name, value } = e.target;
+    const name = e.target.name as keyof ErrorType;
+    const value = e.target.value;
     setFormData((prev) => ({ ...prev, [name]: value }));
     // Clear the specific error when the user starts typing again
     if (errors[name]) {
@@ -25,7 +30,7 @@ function Login() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
     setErrors(INITIAL_ERRORS);
     setIsSubmitting(true);
@@ -44,7 +49,7 @@ function Login() {
       });
 
       if (response.ok) {
-        navigate("/app", { replace: true });
+        navigate("/dashboard", { replace: true });
       } else {
         setErrors((prev) => ({
           ...prev,

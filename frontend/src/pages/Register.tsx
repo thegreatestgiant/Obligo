@@ -9,7 +9,11 @@ function Register() {
     submit?: string;
   };
 
-  const INITIAL_ERRORS: ErrorType = {};
+  const INITIAL_ERRORS: ErrorType = {
+    email: "",
+    username: "",
+    password: "",
+  };
 
   const [formData, setFormData] = useState(INITIAL_ERRORS);
   const [errors, setErrors] = useState<ErrorType>({});
