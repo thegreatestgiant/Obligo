@@ -1,6 +1,7 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "./Toast";
 import { useAuth } from "../auth/AuthContext";
+import { api } from "../api/clients";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -11,14 +12,7 @@ function Navbar() {
     e.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:1234/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // body: JSON.stringify({}),
-        credentials: "include",
-      });
+      const response = await api.logout();
 
       if (response.ok) {
         showToast("Logged out");

@@ -11,7 +11,13 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     credentials: "include", // Ensures our Go cookies are always sent!
   });
 
-  // We handle the 204 No Content here so our components never crash!
+  if (response.status === 401) {
+    // Shout to the React app that the session is dead
+    window.dispatchEvent(new Event("auth-expired"));
+
+    // Throw a specific error so your components can choose to ignore the generic toast
+    throw new Error("Unauthorized");
+  }
 
   if (!response.ok) {
     throw new Error(`API Error: ${response.status}`);

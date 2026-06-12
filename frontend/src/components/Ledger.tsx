@@ -33,7 +33,8 @@ export default function Ledger() {
       } else {
         showToast("Failed to delete.", "error");
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.message === "Unauthorized") return;
       showToast("Network error.", "error");
     }
   };
@@ -75,7 +76,8 @@ export default function Ledger() {
       } else {
         showToast("Failed to add entry.", "error");
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.message === "Unauthorized") return;
       showToast("Network error.", "error");
     } finally {
       setIsSubmitting(false);

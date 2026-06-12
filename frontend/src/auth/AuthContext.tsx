@@ -48,6 +48,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      console.warn("Session expired. Logging out globally.");
+      setUser(null); // This triggers ProtectedRoute to redirect to /login
+    };
+
+    window.addEventListener("auth-expired", handleAuthExpired);
+
+    // Cleanup the listener when the provider unmounts
+    return () => window.removeEventListener("auth-expired", handleAuthExpired);
+  }, []);
   return (
     <AuthContext.Provider value={{ user, isLoading, checkAuth }}>
       {children}

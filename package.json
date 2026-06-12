@@ -1,7 +1,0 @@
-{
-  "dependencies": {
-    "button": "^1.1.1",
-    "input": "^1.0.1",
-    "react-router-dom": "^7.17.0"
-  }
-}
