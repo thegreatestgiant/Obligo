@@ -28,6 +28,7 @@ export default function Ledger() {
       const res = await api.deleteEntry(id);
       if (res.ok) {
         showToast("Transaction deleted.", "success");
+        // setCurrentPage(1);
         await fetchEntries(); // Refresh data
         await checkAuth(true); // Sync global dashboard numbers
       } else {
@@ -57,6 +58,12 @@ export default function Ledger() {
     fetchEntries();
   }, []);
 
+  useEffect(() => {
+    const maxPages = Math.max(1, Math.ceil(entries.length / itemsPerPage));
+    if (currentPage > maxPages) {
+      setCurrentPage(maxPages);
+    }
+  }, [entries.length, currentPage, itemsPerPage]);
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
     setIsSubmitting(true);
