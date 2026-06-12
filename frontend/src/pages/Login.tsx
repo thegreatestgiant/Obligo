@@ -1,30 +1,25 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
+type ErrorType = {
+  username?: string;
+  password?: string;
+  submit?: string;
+};
+
+const INITIAL_ERRORS: ErrorType = {};
+
 function Login() {
-  type ErrorType = {
-    username?: string;
-    password?: string;
-    submit?: string;
-  };
-
-  const INITIAL_ERRORS: ErrorType = {
-    email: "",
-    username: "",
-    password: "",
-  };
-
-  const [formData, setFormData] = useState(INITIAL_ERRORS);
-
-  const [errors, setErrors] = useState<ErrorType>({});
+  const [formData, setFormData] = useState({ username: "", password: "" });
+  const [errors, setErrors] = useState<ErrorType>(INITIAL_ERRORS);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (e: { target: { name: any; value: any } }) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.name as keyof ErrorType;
     const value = e.target.value;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear the specific error when the user starts typing again
+
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -51,33 +46,45 @@ function Login() {
       if (response.ok) {
         navigate("/dashboard", { replace: true });
       } else {
-        setErrors((prev) => ({
-          ...prev,
-          submit: "Invalid username or password.",
-        }));
+        setErrors({ submit: "Invalid username or password." });
       }
     } catch (error) {
       console.error("Network Error:", error);
-      setErrors((prev) => ({
-        ...prev,
-        submit: "Cannot connect to the server.",
-      }));
+      setErrors({ submit: "Cannot connect to the server." });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    // Outer container: takes up the full screen height, centers the card, adds a soft background color
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-      {/* The Login Card */}
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl border border-slate-100">
+    <div className="min-h-screen relative flex items-center justify-center bg-slate-950 py-12 px-4 sm:px-6 lg:px-8">
+      <Link
+        to="/"
+        className="absolute top-8 left-8 flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition-colors group"
+      >
+        <svg
+          className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M10 19l-7-7m0 0l7-7m-7 7h18"
+          ></path>
+        </svg>
+        Back to Home
+      </Link>
+      {/* The Login Card: Slightly lighter slate, dark borders, soft shadow */}
+      <div className="max-w-md w-full space-y-8 bg-slate-900 p-10 rounded-2xl shadow-2xl border border-slate-800">
         {/* Header Section */}
         <div>
-          <h2 className="mt-2 text-center text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="mt-2 text-center text-3xl font-extrabold text-white tracking-tight">
             Welcome back
           </h2>
-          <p className="mt-3 text-center text-sm text-slate-500">
+          <p className="mt-3 text-center text-sm text-slate-400">
             Enter your details to access your MaaserCalc dashboard.
           </p>
         </div>
@@ -89,7 +96,7 @@ function Login() {
             <div>
               <label
                 htmlFor="username"
-                className="block text-sm font-semibold text-slate-700 mb-1"
+                className="block text-sm font-semibold text-slate-300 mb-1"
               >
                 Username
               </label>
@@ -101,10 +108,10 @@ function Login() {
                 value={formData.username}
                 onChange={handleChange}
                 placeholder="Enter your username"
-                className={`w-full px-4 py-2.5 rounded-lg border bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all duration-200 ${
+                className={`w-full px-4 py-2.5 rounded-lg border bg-slate-950 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-slate-900 transition-all duration-200 ${
                   errors.username
                     ? "border-red-500 focus:ring-red-500"
-                    : "border-slate-200"
+                    : "border-slate-700"
                 }`}
               />
               {errors.username && (
@@ -118,7 +125,7 @@ function Login() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-semibold text-slate-700 mb-1"
+                className="block text-sm font-semibold text-slate-300 mb-1"
               >
                 Password
               </label>
@@ -130,10 +137,10 @@ function Login() {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className={`w-full px-4 py-2.5 rounded-lg border bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all duration-200 ${
+                className={`w-full px-4 py-2.5 rounded-lg border bg-slate-950 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-slate-900 transition-all duration-200 ${
                   errors.password
                     ? "border-red-500 focus:ring-red-500"
-                    : "border-slate-200"
+                    : "border-slate-700"
                 }`}
               />
               {errors.password && (
@@ -146,8 +153,8 @@ function Login() {
 
           {/* Top-Level Submit Error */}
           {errors.submit && (
-            <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-              <p className="text-sm text-center text-red-600 font-medium">
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+              <p className="text-sm text-center text-red-400 font-medium">
                 {errors.submit}
               </p>
             </div>
@@ -158,7 +165,7 @@ function Login() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
@@ -192,11 +199,11 @@ function Login() {
 
           {/* Footer Link */}
           <div className="flex items-center justify-center pt-2">
-            <span className="text-sm text-slate-500">
+            <span className="text-sm text-slate-400">
               Don't have an account?{" "}
               <Link
                 to="/register"
-                className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors"
+                className="font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
               >
                 Register here
               </Link>

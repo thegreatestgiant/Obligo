@@ -1,10 +1,10 @@
 import { defineConfig } from "vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
-import babel from "@rolldown/plugin-babel";
+import tailwindcss from "@tailwindcss/vite"; // <-- Import the plugin
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   build: {
     outDir: "../dist",
     // Optional: Clear the output directory before each build

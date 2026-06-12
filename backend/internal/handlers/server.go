@@ -33,6 +33,6 @@ func StartServer(cfg *App) {
 	mux.Handle("/", middleware.SpaFallback(fs, "index.html"))
 
 	fmt.Println("Starting Server")
-	http.ListenAndServe(fmt.Sprintf(":%s", port), mux)
+	http.ListenAndServe(fmt.Sprintf(":%s", port), middleware.CorsMiddleware(mux))
 	fmt.Println("Stopping Server")
 }
