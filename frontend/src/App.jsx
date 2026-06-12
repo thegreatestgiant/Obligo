@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import { AuthProvider } from "./AuthContext";
 import ProtectedRoute from "./ProtectedRoute";
+import Settings from "./pages/Settings";
 
 function App() {
   return (
@@ -19,10 +20,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           {/* Anything inside here REQUIRES a valid cookie */}
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route
-            path="/settings"
-            element={<div className="text-white p-10">Settings</div>}
-          />
+          <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>
     </AuthProvider>

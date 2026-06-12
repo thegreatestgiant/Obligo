@@ -101,60 +101,66 @@ func (cfg *App) getEntry(user_id uuid.UUID) Ledger {
 
 func (cfg *App) getAmountOwed(user_id uuid.UUID) float64 {
 	query := "SELECT SUM(charity_owed) FROM Ledgers WHERE user_id=$1"
-	owed := 0.0
+	var owed sql.NullFloat64
 
 	row := cfg.DB.QueryRow(query, user_id)
 	if err := row.Scan(&owed); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("Bad uuid: %v", user_id)
-			return owed
+			return owed.Float64
 		}
 		log.Default().Printf("Couldn't sum owed: %v", err)
 		return 10
 	}
 
 	log.Printf("Total Amount Owed: %.2f", owed)
-	return owed
+	return owed.Float64
 }
 
 func (cfg *App) getAmountEarned(user_id uuid.UUID) float64 {
 	query := "SELECT SUM(amount) FROM Ledgers WHERE user_id=$1 AND ledger_entry='paycheck'"
-	earned := 0.0
+	var earned sql.NullFloat64
+	z := 0.0
 
 	row := cfg.DB.QueryRow(query, user_id)
 	if err := row.Scan(&earned); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("Bad uuid: %v", user_id)
-			return earned
+			return z
 		}
 		log.Default().Printf("Couldn't sum fulfilled: %v", err)
 		return 10
 	}
 
 	log.Printf("Total Amount Earned: %.2f", earned)
-	return earned
+	return earned.Float64
 }
 
 func (cfg *App) getAmountDonated(user_id uuid.UUID) float64 {
 	query := "SELECT SUM(amount) FROM Ledgers WHERE user_id=$1 AND ledger_entry='donation'"
-	donated := 0.0
+	var donated sql.NullFloat64
+	d := 0.0
 
 	row := cfg.DB.QueryRow(query, user_id)
 	if err := row.Scan(&donated); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("Bad uuid: %v", user_id)
-			return donated
+			return d
 		}
 		log.Default().Printf("Couldn't sum fulfilled: %v", err)
 		return 10
 	}
 
 	log.Printf("Total Amount Donated: %.2f", donated)
-	return donated
+	return donated.Float64
 }
 
 func (cfg *App) getAmountFulfilled(user_id uuid.UUID) float64 {
-	fulfilled := (cfg.getAmountDonated(user_id) / cfg.getAmountOwed(user_id)) * 100
+	owed := cfg.getAmountOwed(user_id)
+	if owed == 0 {
+		return 0.0
+	}
+	fulfilled := (cfg.getAmountDonated(user_id) / owed) * 100
 
 	log.Printf("Total Percent Fulfilled: %.2f%%", fulfilled)
 	return fulfilled

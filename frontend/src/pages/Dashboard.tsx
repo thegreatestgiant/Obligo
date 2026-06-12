@@ -1,5 +1,7 @@
+import Navbar from "./Navbar";
+
 function Dashboard() {
-  return <></>;
+  return <Navbar />;
 }
 
 export default Dashboard;

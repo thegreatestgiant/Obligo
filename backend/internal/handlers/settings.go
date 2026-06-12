@@ -37,9 +37,8 @@ func (cfg *App) updatePercent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/text")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "Updated Donation Percent")
+	fmt.Fprintf(w, `"donation_percentage": "%f"}`, setting.Percent)
 	cfg.getDonationPercent(user_id)
 }
 
