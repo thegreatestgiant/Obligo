@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { api } from "../api/clients";
 
 type UserSummary = {
   Total_Owed: number;
@@ -24,11 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuth = async (silent: boolean = false) => {
     if (!silent) setIsLoading(true);
     try {
-      // 2. Point this to your summary endpoint!
-      const response = await fetch("http://localhost:1234/summary", {
-        method: "GET",
-        credentials: "include",
-      });
+      const response = await api.getSummary();
 
       if (response.ok) {
         const data = await response.json();
