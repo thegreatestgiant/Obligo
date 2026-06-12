@@ -12,7 +12,7 @@ type UserSummary = {
 type AuthContextType = {
   user: UserSummary | null;
   isLoading: boolean;
-  checkAuth: () => Promise<void>;
+  checkAuth: (silent?: boolean) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,8 +21,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const checkAuth = async () => {
-    setIsLoading(true);
+  const checkAuth = async (silent: boolean = false) => {
+    if (!silent) setIsLoading(true);
     try {
       // 2. Point this to your summary endpoint!
       const response = await fetch("http://localhost:1234/summary", {

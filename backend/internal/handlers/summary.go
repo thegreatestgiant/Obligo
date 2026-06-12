@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
 	"math"
 	"net/http"
@@ -45,6 +45,6 @@ func (cfg *App) summary(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, ` {"summary":"%v"}`, summary)
+	json.NewEncoder(w).Encode(summary)
 	log.Printf("Summary of charity status: %v", summary)
 }

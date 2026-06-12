@@ -16,6 +16,7 @@ CREATE TABLE Ledgers (
   tranaction_id SERIAL PRIMARY KEY,
   ledger_entry entry,
   amount DECIMAL(18, 2) NOT NULL,
+  description VARCHAR(),
   charity_owed DECIMAL(18, 2),
   charity_fulfilled DECIMAL(18, 2),
   transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

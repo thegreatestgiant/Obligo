@@ -21,7 +21,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {toast && (
         <div
-          className={`fixed top-5 right-5 px-6 py-3 rounded-lg shadow-2xl border transition-all duration-300 z-50 ${
+          onClick={() => setToast(null)}
+          className={`fixed bottom-5 left-5 px-6 py-3 rounded-lg shadow-2xl border transition-all duration-300 z-50 cursor-pointer hover:opacity-80 ${
             toast.type === "success"
               ? "bg-emerald-900 border-emerald-700 text-emerald-100"
               : "bg-red-900 border-red-700 text-red-100"

@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -26,10 +26,12 @@ func (e EntryType) IsValid() bool {
 }
 
 type Ledger struct {
-	LedgerEntry      EntryType `json:"ledger_entry"` // Maps to your 'entry' enum
-	Amount           float64   `json:"amount"`       // DECIMAL(18,2)
-	CharityOwed      float64   `json:"charity_owed"` // Use pointers if these can be NULL
+	LedgerEntry      EntryType `json:"ledger_entry"`
+	Amount           float64   `json:"amount"`
+	Description      string    `json:"description"`
+	CharityOwed      float64   `json:"charity_owed"`
 	CharityFulfilled float64   `json:"charity_fulfilled"`
+	TransactionDate  time.Time `json:"transaction_date"`
 }
 
 func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +44,7 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlInsert := "INSERT INTO Ledgers (user_id, ledger_entry, amount, charity_owed, charity_fulfilled) VALUES ($1, $2, $3, $4, $5)"
+	sqlInsert := "INSERT INTO Ledgers (user_id, ledger_entry, amount, description, charity_owed, charity_fulfilled) VALUES ($1, $2, $3, $4, $5, $6)"
 	entry := Ledger{}
 
 	json.NewDecoder(r.Body).Decode(&entry)
@@ -68,7 +70,7 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Recieved Donation, fulfilled %.2f%%", fulfilled)
 	}
 
-	_, err := cfg.DB.Query(sqlInsert, user_id, entry.LedgerEntry, entry.Amount, owed, fulfilled)
+	_, err := cfg.DB.Query(sqlInsert, user_id, entry.LedgerEntry, entry.Amount, entry.Description, owed, fulfilled)
 	if err != nil {
 		http.Error(w, "Bad Query", http.StatusBadRequest)
 		log.Printf("Couldn't add to db: %v", err)
@@ -79,7 +81,7 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "Recieved Entry")
+	// fmt.Fprintln(w, "Recieved Entry")
 	json.NewEncoder(w).Encode(entry)
 }
 
@@ -88,7 +90,7 @@ func (cfg *App) getEntries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	entries := []Ledger{}
-	query := "SELECT ledger_entry, amount, charity_owed, charity_fulfilled FROM Ledgers WHERE user_id=$1"
+	query := `SELECT ledger_entry, amount, COALESCE(description,'') AS description, charity_owed, charity_fulfilled, transaction_date FROM Ledgers WHERE user_id=$1 ORDER BY transaction_date DESC`
 
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
@@ -99,16 +101,22 @@ func (cfg *App) getEntries(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "No entries", http.StatusNoContent)
 		log.Default().Printf("Bad query: %v ", err)
-		end(w, r, entries)
+		// end(w, r, entries)
 		return
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var entry Ledger
-		if err = rows.Scan(&entry.LedgerEntry, &entry.Amount, &entry.CharityOwed, &entry.CharityFulfilled); err != nil {
+		if err = rows.Scan(
+			&entry.LedgerEntry,
+			&entry.Amount,
+			&entry.Description,
+			&entry.CharityOwed,
+			&entry.CharityFulfilled,
+			&entry.TransactionDate); err != nil {
 			log.Printf("Couldn't scan row: %v", err)
-			end(w, r, entries)
+			// end(w, r, entries)
 			return
 		}
 		entries = append(entries, entry)
@@ -124,7 +132,7 @@ func (cfg *App) getEntries(w http.ResponseWriter, r *http.Request) {
 func end(w http.ResponseWriter, r *http.Request, entries []Ledger) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "The Ledger entries")
+	// fmt.Fprintln(w, "The Ledger entries")
 	json.NewEncoder(w).Encode(entries)
 	log.Printf("Sent the ledgers: %v", entries)
 }

@@ -1,0 +1,2 @@
+ALTER TABLE Ledgers
+ADD COLUMN description VARCHAR();
