@@ -1,9 +1,11 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "./Toast";
+import { useAuth } from "../auth/AuthContext";
 
 function Navbar() {
   const navigate = useNavigate();
-  const showToast = useToast(); // Initialize toast
+  const showToast = useToast();
+  const { checkAuth } = useAuth();
 
   const logout = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
@@ -19,12 +21,8 @@ function Navbar() {
       });
 
       if (response.ok) {
-        console.log("logged out");
-        console.log(response);
         showToast("Logged out");
-        setTimeout(() => {
-          navigate("/", { replace: true });
-        }, 1000);
+        await checkAuth();
       } else {
         showToast("Couldn't log out 😥");
       }

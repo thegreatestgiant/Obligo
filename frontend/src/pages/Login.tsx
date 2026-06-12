@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
 type ErrorType = {
   username?: string;
@@ -14,6 +15,7 @@ function Login() {
   const [errors, setErrors] = useState<ErrorType>(INITIAL_ERRORS);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { checkAuth } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.name as keyof ErrorType;
@@ -44,6 +46,7 @@ function Login() {
       });
 
       if (response.ok) {
+        await checkAuth();
         navigate("/dashboard", { replace: true });
       } else {
         setErrors({ submit: "Invalid username or password." });
