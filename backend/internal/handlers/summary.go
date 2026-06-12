@@ -45,6 +45,6 @@ func (cfg *App) summary(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "Summary")
+	fmt.Fprintf(w, ` {"summary":"%v"}`, summary)
 	log.Printf("Summary of charity status: %v", summary)
 }

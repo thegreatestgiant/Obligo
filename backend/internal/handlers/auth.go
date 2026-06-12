@@ -63,26 +63,29 @@ func (cfg *App) Register(w http.ResponseWriter, r *http.Request) {
 func (cfg *App) Logout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		http.Error(w, "Unauthorized session", http.StatusUnauthorized)
 		return
 	}
 
 	claims, err := auth.Verifyer(cookie.Value, cfg.JWT)
 	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		log.Printf("Couldn't get claims", err)
+		http.Error(w, "Couldn't get claims", http.StatusInternalServerError)
+		log.Printf("Couldn't get claims: %v", err)
 		return
 	}
 
 	user_id, err := uuid.Parse(claims.Subject)
 	if err != nil {
+		http.Error(w, "Couldn't get uuid", http.StatusInternalServerError)
 		log.Printf("Couldn't get user uuid: %v", err)
 		return
 	}
+
 	refresh := cfg.getRefresh(user_id)
 
 	jti, err := uuid.Parse(claims.ID)
 	if err != nil {
+		http.Error(w, "Couldn't get jti", http.StatusInternalServerError)
 		log.Printf("Couldn't get jti uuid: %v", err)
 		return
 	}
@@ -108,6 +111,7 @@ func (cfg *App) Logout(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 	})
 	fmt.Fprintln(w, "Logging out ")
+	w.WriteHeader(http.StatusOK)
 	log.Println("Logging out")
 }
 
@@ -124,8 +128,9 @@ func (cfg *App) Login(w http.ResponseWriter, r *http.Request) {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPass), []byte(body.Password))
 	if err != nil {
 		log.Printf("Bad password: %v", err)
-		w.WriteHeader(http.StatusForbidden)
-		fmt.Fprintln(w, `"message": "Login failed"}`)
+		http.Error(w, `{"message": "Login failed"}`, http.StatusUnauthorized)
+		// w.WriteHeader(http.StatusForbidden)
+		// fmt.Fprintln(w, `{"message": "Login failed"}`)
 		return
 	}
 

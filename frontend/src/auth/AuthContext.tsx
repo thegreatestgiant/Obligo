@@ -1,14 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-// 1. Update the shape to match your Go 'summary' struct exactly!
-// (Assuming your Go struct uses the exact field names for JSON)
 type UserSummary = {
-  Total_Owed: number; // Change to match Go
-  Donation_Percent: number; // Add underscore
-  Percent_Fulfilled: number; // Add underscore
-  Remaining_Obligation: number; // Add underscore
-  Total_Donated: number; // Add underscore
-  Total_Earned: number; // Add underscore
+  Total_Owed: number;
+  Donation_Percent: number;
+  Percent_Fulfilled: number;
+  Remaining_Obligation: number;
+  Total_Donated: number;
+  Total_Earned: number;
 };
 
 type AuthContextType = {
@@ -34,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (response.ok) {
         const data = await response.json();
-        setUser(data); // Save the summary data to the global state!
+        setUser(data);
       } else {
         setUser(null);
       }
