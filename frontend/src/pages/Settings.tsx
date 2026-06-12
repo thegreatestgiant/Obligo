@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Navbar from "./Navbar";
 import { useAuth } from "../AuthContext";
-import { useToast, ToastComponent } from "./Toast";
+import { useToast } from "./Toast";
 
 function Settings() {
   const [percent, setPercent] = useState("");
