@@ -24,13 +24,12 @@ func (cfg *App) updatePercent(w http.ResponseWriter, r *http.Request) {
 	if user_id == uuid.Nil {
 		return
 	}
-	query := "UPDATE Users SET donation_percentage=$1 WHERE user_id=$2"
 	setting := setting{}
 
 	json.NewDecoder(r.Body).Decode(&setting)
 	defer r.Body.Close()
 
-	_, err := cfg.DB.Exec(query, setting.Percent, user_id)
+	err := cfg.updatePercentQuery(setting.Percent, user_id)
 	if err != nil {
 		http.Error(w, "Not Updated", http.StatusInternalServerError)
 		log.Printf("Couldn't update DB: %v", err)
@@ -47,8 +46,6 @@ func (cfg *App) changePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	setting := setting{}
-	getQuery := "SELECT password_hash FROM users WHERE user_id=$1"
-	updateQuery := "UPDATE Users SET password_hash=$1 WHERE user_id=$2"
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
 		return
@@ -57,13 +54,11 @@ func (cfg *App) changePassword(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&setting)
 	defer r.Body.Close()
 
-	var pass string
-	row := cfg.DB.QueryRow(getQuery, user_id)
-	if err := row.Scan(&pass); err != nil {
-		log.Printf("Bad Password, DB errored: %v", err)
+	pass, err := cfg.getPass(user_id)
+	if err != nil {
 		return
 	}
-	err := bcrypt.CompareHashAndPassword([]byte(pass), []byte(setting.OldPassword))
+	err = bcrypt.CompareHashAndPassword([]byte(pass), []byte(setting.OldPassword))
 	if err != nil {
 		log.Printf("Bad password: %v", err)
 		return
@@ -76,7 +71,7 @@ func (cfg *App) changePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = cfg.DB.Exec(updateQuery, hashedPassword, user_id)
+	err = cfg.updatePassword(hashedPassword, user_id)
 	if err != nil {
 		http.Error(w, "Not Updated", http.StatusInternalServerError)
 		log.Printf("Couldn't update DB: %v", err)

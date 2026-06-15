@@ -62,6 +62,18 @@ func (cfg *App) queryReturnTemplate(query string, dest []any, args ...any) error
 	return nil
 }
 
+func (cfg *App) getPass(user_id uuid.UUID) (string, error) {
+	getQuery := "SELECT password_hash FROM users WHERE user_id=$1"
+	var pass string
+	err := cfg.queryReturnTemplate(getQuery, []any{&pass}, user_id)
+	if err != nil {
+		log.Printf("Bad Password, DB errored: %v", err)
+		return pass, err
+	}
+
+	return pass, nil
+}
+
 func (cfg *App) blacklisted(jti uuid.UUID) bool {
 	query := "SELECT 1 FROM denylist WHERE jti=$1"
 	var placeholder int
@@ -226,10 +238,20 @@ func (cfg *App) getEntry(transaction_id string, user_id uuid.UUID) (Ledger, erro
 func (cfg *App) revokeRefresh(token string) {
 	query := "UPDATE refresh_tokens SET updated_at=$1, revoked_at=$1 WHERE token=$2"
 
-	_, err := cfg.DB.Exec(query, time.Now(), token)
+	err := cfg.queryExecTemplate(query, time.Now(), token)
 	if err != nil {
 		log.Printf("Couldn't revoke refresh token: %v", err)
 	}
+}
+
+func (cfg *App) updatePercentQuery(percent float64, user_id uuid.UUID) error {
+	query := "UPDATE Users SET donation_percentage=$1 WHERE user_id=$2"
+	return cfg.queryExecTemplate(query, percent, user_id)
+}
+
+func (cfg *App) updatePassword(pass []byte, user_id uuid.UUID) error {
+	updateQuery := "UPDATE Users SET password_hash=$1 WHERE user_id=$2"
+	return cfg.queryExecTemplate(updateQuery, pass, user_id)
 }
 
 // ============================================================================
