@@ -9,6 +9,35 @@ import (
 	"github.com/google/uuid"
 )
 
+func (cfg *App) queryTemplate(query string, args ...any) (*sql.Rows, error) {
+	rows, err := cfg.DB.Query(query, args...)
+	if err != nil {
+		log.Printf("Catastrophic DB error in query [%s]: %v", query, err)
+		return nil, err
+	}
+	return rows, nil
+}
+
+func (cfg *App) queryReturnTemplate(query string, dest []any, args ...any) error {
+	err := cfg.DB.QueryRow(query, args...).Scan(dest...)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			log.Printf("Catastrophic DB error in query [%s]: %v", query, err)
+		}
+		return err
+	}
+	return nil
+}
+
+func (cfg *App) queryExecTemplate(query string, fields ...any) error {
+	_, err := cfg.DB.Exec(query, fields...)
+	if err != nil {
+		log.Printf("DB Exec Error for query [%s]: %v", query, err)
+		return err
+	}
+	return nil
+}
+
 // ============================================================================
 // CREATE (INSERT)
 // ============================================================================
@@ -38,28 +67,49 @@ func (cfg *App) insertEntry(user_id uuid.UUID, t EntryType, amount float64, desc
 	return newID, err
 }
 
-func (cfg *App) queryExecTemplate(query string, fields ...any) error {
-	_, err := cfg.DB.Exec(query, fields...)
-	if err != nil {
-		log.Printf("DB Exec Error for query [%s]: %v", query, err)
-		return err
-	}
-	return nil
-}
-
 // ============================================================================
 // READ (SELECT)
 // ============================================================================
 
-func (cfg *App) queryReturnTemplate(query string, dest []any, args ...any) error {
-	err := cfg.DB.QueryRow(query, args...).Scan(dest...)
+func (cfg *App) getUserEntries(user_id uuid.UUID) ([]Ledger, error) {
+	query := `SELECT transaction_id, ledger_entry, amount, COALESCE(description,'') AS description, 
+	charity_owed, charity_fulfilled, transaction_date 
+	FROM Ledgers 
+	WHERE user_id=$1 
+	ORDER BY transaction_date DESC`
+
+	rows, err := cfg.queryTemplate(query, user_id)
 	if err != nil {
-		if err != sql.ErrNoRows {
-			log.Printf("Catastrophic DB error in query [%s]: %v", query, err)
-		}
-		return err
+		return nil, err
 	}
-	return nil
+	defer rows.Close()
+
+	entries := []Ledger{}
+
+	for rows.Next() {
+		var entry Ledger
+		err := rows.Scan(
+			&entry.TransactionID,
+			&entry.LedgerEntry,
+			&entry.Amount,
+			&entry.Description,
+			&entry.CharityOwed,
+			&entry.CharityFulfilled,
+			&entry.TransactionDate,
+		)
+		if err != nil {
+			log.Printf("Couldn't scan row: %v", err)
+			continue
+		}
+		entries = append(entries, entry)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Printf("Error iterating rows: %v", err)
+		return nil, err
+	}
+
+	return entries, nil
 }
 
 func (cfg *App) getPass(user_id uuid.UUID) (string, error) {

@@ -11,41 +11,16 @@ func (cfg *App) getEntries(w http.ResponseWriter, r *http.Request) {
 	if !validateRequest(w, r, "GET", false) {
 		return
 	}
-	entries := []Ledger{}
-	query := `SELECT transaction_id, ledger_entry, amount, COALESCE(description,'') AS description, charity_owed, charity_fulfilled, transaction_date FROM Ledgers WHERE user_id=$1 ORDER BY transaction_date DESC`
 
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
 		return
 	}
 
-	rows, err := cfg.DB.Query(query, user_id)
+	entries, err := cfg.getUserEntries(user_id)
 	if err != nil {
-		http.Error(w, "No entries", http.StatusNoContent)
-		log.Default().Printf("Bad query: %v ", err)
+		http.Error(w, "Failed to retrieve entries", http.StatusInternalServerError)
 		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var entry Ledger
-		if err = rows.Scan(
-			&entry.TransactionID,
-			&entry.LedgerEntry,
-			&entry.Amount,
-			&entry.Description,
-			&entry.CharityOwed,
-			&entry.CharityFulfilled,
-			&entry.TransactionDate); err != nil {
-			log.Printf("Couldn't scan row: %v", err)
-			// end(w, r, entries)
-			return
-		}
-		entries = append(entries, entry)
-	}
-	if err = rows.Err(); err != nil {
-		http.Error(w, "IDK", http.StatusInternalServerError)
-		log.Printf("Not sure why, but here's an error: %v", err)
 	}
 
 	end(w, r, entries)
