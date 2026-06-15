@@ -13,13 +13,6 @@ downF:
 logs:
 	docker compose logs -f
 
-test: 
-	go test ./backend/internal/handlers
-
-reset-test: 
-	docker compose rm -s -fv db-test
-	docker compose up -d db-test
-
 run:
 	go run -C backend .
 
@@ -44,4 +37,3 @@ db-wipe-prod:
 
 db-setup-prod: db-wipe-prod
 	psql $(DB_PROD_URL) -f backend/schema/000_official_look.sql
-

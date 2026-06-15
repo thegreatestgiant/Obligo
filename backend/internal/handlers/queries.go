@@ -60,7 +60,7 @@ func (cfg *App) addRefresh(token string, user_id uuid.UUID, expires time.Time) {
 	query := "INSERT INTO refresh_tokens (token, user_id, expires_at) VALUES ($1, $2, $3)"
 	_, err := cfg.DB.Exec(query, token, user_id, expires)
 	if err != nil {
-		log.Println("Couldn't creat refresh token")
+		log.Printf("Couldn't create refresh token: %v", err)
 	}
 }
 
@@ -127,7 +127,7 @@ func (cfg *App) getAmountOwed(user_id uuid.UUID) float64 {
 		return 10
 	}
 
-	log.Printf("Total Amount Owed: %.2f", owed)
+	log.Printf("Total Amount Owed: %.2f", owed.Float64)
 	return owed.Float64
 }
 
@@ -146,7 +146,7 @@ func (cfg *App) getAmountEarned(user_id uuid.UUID) float64 {
 		return 10
 	}
 
-	log.Printf("Total Amount Earned: %.2f", earned)
+	log.Printf("Total Amount Earned: %.2f", earned.Float64)
 	return earned.Float64
 }
 
@@ -165,7 +165,7 @@ func (cfg *App) getAmountDonated(user_id uuid.UUID) float64 {
 		return 10
 	}
 
-	log.Printf("Total Amount Donated: %.2f", donated)
+	log.Printf("Total Amount Donated: %.2f", donated.Float64)
 	return donated.Float64
 }
 
@@ -211,8 +211,13 @@ func (cfg *App) userExists(email, username string) bool {
 	query := "SELECT * FROM users WHERE email=$1 OR username=$2"
 	// Will return nil if empty, and it doesn't exist
 	err := cfg.DB.QueryRow(query, email, username).Scan()
-	if err == sql.ErrNoRows {
-		return false
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false
+		}
+		// If the DB crashes or the schema is wrong, log the ACTUAL error!
+		log.Printf("Catastrophic DB error in userExists: %v", err)
+		return true // Fail safe: prevent registration if DB is broken
 	}
 	return true
 }

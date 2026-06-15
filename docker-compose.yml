@@ -11,6 +11,17 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DEV_NAME}
 
+  db-test:
+    image: postgres:17
+    restart: always
+    shm_size: 128mb
+    ports:
+      - "${TEST_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${TEST_NAME}
+
   db-prod:
     image: postgres:17
     restart: always
