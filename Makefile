@@ -14,7 +14,7 @@ logs:
 	docker compose logs -f
 
 test: 
-	go test ./backend/internal/handlers
+	go test -v ./backend/...
 
 reset-test: 
 	docker compose rm -s -fv db-test

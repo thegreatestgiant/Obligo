@@ -16,8 +16,8 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpassword
+          POSTGRES_USER: ${{DB_USER}}
+          POSTGRES_PASSWORD: ${{DB_PASS}}
           POSTGRES_DB: charity_test
         ports:
           - 5435:5432
@@ -43,8 +43,4 @@ jobs:
       - name: Run All Tests
         working-directory: ./backend
         # Inject the environment variables your tests need to connect to the temp DB
-        env:
-          DB_URL: "postgres://testuser:testpassword@localhost:5435/charity_test?sslmode=disable"
-          JWT_SECRET: "test_secret_key"
-          # Add any other variables your config looks for in the .env file here!
         run: go test -v ./...
