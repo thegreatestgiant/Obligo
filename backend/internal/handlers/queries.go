@@ -9,6 +9,15 @@ import (
 	"github.com/google/uuid"
 )
 
+func (cfg *App) executeTemplate(query string, args ...any) (int64, error) {
+	result, err := cfg.DB.Exec(query, args...)
+	if err != nil {
+		log.Printf("DB Exec Error in query [%s]: %v", query, err)
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 func (cfg *App) queryTemplate(query string, args ...any) (*sql.Rows, error) {
 	rows, err := cfg.DB.Query(query, args...)
 	if err != nil {
@@ -316,6 +325,21 @@ func (cfg *App) deleteExpiredJTI() {
 func (cfg *App) deleteExpiredRefresh() {
 	query := "DELETE FROM refresh_tokens WHERE expires_at < Now()"
 	cfg.queryExecTemplate(query)
+}
+
+func (cfg *App) deleteUserEntry(transaction_id string, user_id uuid.UUID) error {
+	query := "DELETE FROM Ledgers WHERE transaction_id=$1 AND user_id=$2"
+
+	rowsAffected, err := cfg.executeTemplate(query, transaction_id, user_id)
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("not found or unauthorized")
+	}
+
+	return nil
 }
 
 // ============================================================================
