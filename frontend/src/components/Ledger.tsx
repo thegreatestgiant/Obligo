@@ -237,6 +237,7 @@ export default function Ledger() {
                           <button
                             onClick={() => handleDelete(entry.transaction_id)}
                             className={`text-slate-600 hover:text-red-500 transition-opacity opacity-0 group-hover:opacity-100`}
+                            title="Warning: Deleting and recreating an entry changes its historical date to today, which may alter past monthly summaries and recalculate owed amounts using your current donation percentage."
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
