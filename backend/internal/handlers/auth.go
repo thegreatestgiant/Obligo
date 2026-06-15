@@ -129,14 +129,11 @@ func (cfg *App) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Bad password: %v", err)
 		http.Error(w, `{"message": "Login failed"}`, http.StatusUnauthorized)
-		// w.WriteHeader(http.StatusForbidden)
-		// fmt.Fprintln(w, `{"message": "Login failed"}`)
 		return
 	}
 
 	cfg.generateTokensWithCookies(w, user_id)
 
-	// w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, `"message": "Login successful"}`)
 	fmt.Fprintln(w, "Set jwtCookie and RefreshCookie")
