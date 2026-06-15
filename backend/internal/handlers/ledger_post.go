@@ -20,10 +20,6 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlInsert := `INSERT INTO Ledgers 
-	(user_id, ledger_entry, amount, description, charity_owed, charity_fulfilled) 
-	VALUES ($1, $2, $3, $4, $5, $6)
-	RETURNING transaction_id`
 	entry := Ledger{}
 
 	json.NewDecoder(r.Body).Decode(&entry)
@@ -49,23 +45,19 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Recieved Donation, fulfilled %.2f%%", fulfilled)
 	}
 
-	var newID int
-	err := cfg.DB.QueryRow(
-		sqlInsert,
+	newID, err := cfg.insertEntry(
 		user_id,
 		entry.LedgerEntry,
 		entry.Amount,
 		entry.Description,
 		owed,
-		fulfilled,
-	).Scan(&newID)
+		fulfilled)
 	if err != nil {
 		http.Error(w, "Bad Query", http.StatusBadRequest)
 		log.Printf("Couldn't add to db: %v", err)
-		return
 	}
 
-	entry, err = cfg.getEntry(fmt.Sprintf("%d", newID))
+	entry, err = cfg.getEntry(fmt.Sprintf("%d", newID), user_id)
 	if err != nil {
 		log.Printf("Error fetching entry: %v", err)
 		http.Error(w, "Entry not found", http.StatusNotFound)

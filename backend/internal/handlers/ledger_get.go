@@ -63,7 +63,7 @@ func (cfg *App) getAnEntry(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Fetching entry ID: %s for User: %s", id, user_id)
 
-	entry, err := cfg.getEntry(id)
+	entry, err := cfg.getEntry(id, user_id)
 	if err != nil {
 		log.Printf("Error fetching entry: %v", err)
 		http.Error(w, "Entry not found", http.StatusNotFound)

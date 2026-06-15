@@ -15,21 +15,31 @@ import (
 
 func (cfg *App) denyList(jti uuid.UUID) {
 	query := "INSERT INTO denylist VALUES ($1, $2)"
-	cfg.insertTemplate(query, jti, time.Now().Local().Add(cfg.Lifetime))
+	cfg.queryExecTemplate(query, jti, time.Now().Local().Add(cfg.Lifetime))
 }
 
 func (cfg *App) addRefresh(token string, user_id uuid.UUID, expires time.Time) {
 	query := "INSERT INTO refresh_tokens (token, user_id, expires_at) VALUES ($1, $2, $3)"
-	cfg.insertTemplate(query, token, user_id, expires)
+	cfg.queryExecTemplate(query, token, user_id, expires)
 }
 
 func (cfg *App) setUser(email, username, passwordHash string) error {
 	sqlInsert := "INSERT INTO Users (email,username,password_hash,user_id) VALUES ($1,$2,$3,$4)"
-	return cfg.insertTemplate(sqlInsert, email, username, passwordHash, uuid.New())
+	return cfg.queryExecTemplate(sqlInsert, email, username, passwordHash, uuid.New())
 }
 
-func (cfg *App) insertTemplate(query string, fields ...any) error {
-	_, err := cfg.DB.Exec(query, fields)
+func (cfg *App) insertEntry(user_id uuid.UUID, t EntryType, amount float64, description string, owed, fulfilled float64) (newID int, e error) {
+	sqlInsert := `INSERT INTO Ledgers 
+	(user_id, ledger_entry, amount, description, charity_owed, charity_fulfilled) 
+	VALUES ($1, $2, $3, $4, $5, $6)
+	RETURNING transaction_id`
+
+	err := cfg.queryReturnTemplate(sqlInsert, []any{&newID}, user_id, t, amount, description, owed, fulfilled)
+	return newID, err
+}
+
+func (cfg *App) queryExecTemplate(query string, fields ...any) error {
+	_, err := cfg.DB.Exec(query, fields...)
 	if err != nil {
 		log.Printf("DB Exec Error for query [%s]: %v", query, err)
 		return err
@@ -41,7 +51,7 @@ func (cfg *App) insertTemplate(query string, fields ...any) error {
 // READ (SELECT)
 // ============================================================================
 
-func (cfg *App) queryRowTemplate(query string, dest []any, args ...any) error {
+func (cfg *App) queryReturnTemplate(query string, dest []any, args ...any) error {
 	err := cfg.DB.QueryRow(query, args...).Scan(dest...)
 	if err != nil {
 		if err != sql.ErrNoRows {
@@ -55,7 +65,7 @@ func (cfg *App) queryRowTemplate(query string, dest []any, args ...any) error {
 func (cfg *App) blacklisted(jti uuid.UUID) bool {
 	query := "SELECT 1 FROM denylist WHERE jti=$1"
 	var placeholder int
-	err := cfg.queryRowTemplate(query, []any{&placeholder}, jti)
+	err := cfg.queryReturnTemplate(query, []any{&placeholder}, jti)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("Not in denylist: %v", jti)
@@ -69,7 +79,7 @@ func (cfg *App) blacklisted(jti uuid.UUID) bool {
 func (cfg *App) getRefresh(user_id uuid.UUID) string {
 	query := "SELECT token FROM refresh_tokens WHERE user_id=$1 AND expires_at>$2 AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 1"
 	var token string
-	err := cfg.queryRowTemplate(query, []any{&token}, user_id, time.Now())
+	err := cfg.queryReturnTemplate(query, []any{&token}, user_id, time.Now())
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("No such token for user_id: %v", user_id)
@@ -84,7 +94,7 @@ func (cfg *App) getDonationPercent(user_id uuid.UUID) float64 {
 	query := "SELECT donation_percentage FROM users WHERE user_id=$1"
 	percent := 10.0
 
-	err := cfg.queryRowTemplate(query, []any{&percent}, user_id)
+	err := cfg.queryReturnTemplate(query, []any{&percent}, user_id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("Bad uuid: %v", user_id)
@@ -101,7 +111,7 @@ func (cfg *App) getAmountOwed(user_id uuid.UUID) float64 {
 	query := "SELECT SUM(charity_owed) FROM Ledgers WHERE user_id=$1"
 	var owed sql.NullFloat64
 
-	if err := cfg.queryRowTemplate(query, []any{&owed}, user_id); err != nil {
+	if err := cfg.queryReturnTemplate(query, []any{&owed}, user_id); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("Bad uuid: %v", user_id)
 			return owed.Float64
@@ -118,7 +128,7 @@ func (cfg *App) getAmountEarned(user_id uuid.UUID) float64 {
 	query := "SELECT SUM(amount) FROM Ledgers WHERE user_id=$1 AND ledger_entry='paycheck'"
 	var earned sql.NullFloat64
 
-	err := cfg.queryRowTemplate(query, []any{&earned}, user_id)
+	err := cfg.queryReturnTemplate(query, []any{&earned}, user_id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("You didn't earn anything: %v", user_id)
@@ -134,7 +144,7 @@ func (cfg *App) getAmountDonated(user_id uuid.UUID) float64 {
 	query := "SELECT SUM(amount) FROM Ledgers WHERE user_id=$1 AND ledger_entry='donation'"
 	var donated sql.NullFloat64
 
-	err := cfg.queryRowTemplate(query, []any{&donated}, user_id)
+	err := cfg.queryReturnTemplate(query, []any{&donated}, user_id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("You didn't earn anything: %v", user_id)
@@ -151,7 +161,7 @@ func (cfg *App) getUser(username string) (uuid.UUID, string) {
 	var user_id uuid.UUID
 	var pass string
 
-	err := cfg.queryRowTemplate(sqlQuery, []any{&user_id, &pass}, username)
+	err := cfg.queryReturnTemplate(sqlQuery, []any{&user_id, &pass}, username)
 	if err != nil {
 		log.Printf("No such user: %s", username)
 		return uuid.Nil, ""
@@ -163,7 +173,7 @@ func (cfg *App) userExists(email, username string) bool {
 	query := "SELECT 1 FROM users WHERE email=$1 OR username=$2"
 	// Will return nil if empty, and it doesn't exist
 
-	err := cfg.queryRowTemplate(query, []any{}, email, username)
+	err := cfg.queryReturnTemplate(query, []any{}, email, username)
 	cfg.DB.QueryRow(query, email, username).Scan()
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -196,7 +206,7 @@ func (cfg *App) getEntry(transaction_id string, user_id uuid.UUID) (Ledger, erro
 	}
 
 	// 2. Pass the query, destination slice, and BOTH arguments to the template
-	err := cfg.queryRowTemplate(query, dest, transaction_id, user_id)
+	err := cfg.queryReturnTemplate(query, dest, transaction_id, user_id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return entry, fmt.Errorf("no entry found with ID: %s", transaction_id)
@@ -226,21 +236,14 @@ func (cfg *App) revokeRefresh(token string) {
 // DELETE
 // ============================================================================
 
-func (cfg *App) deleteTemplate(query string) {
-	_, err := cfg.DB.Exec(query)
-	if err != nil {
-		log.Printf("Couldn't delete: %v", err)
-	}
-}
-
 func (cfg *App) deleteExpiredJTI() {
 	query := "DELETE FROM denylist WHERE expires_at < Now()"
-	cfg.deleteTemplate(query)
+	cfg.queryExecTemplate(query)
 }
 
 func (cfg *App) deleteExpiredRefresh() {
 	query := "DELETE FROM refresh_tokens WHERE expires_at < Now()"
-	cfg.deleteTemplate(query)
+	cfg.queryExecTemplate(query)
 }
 
 // ============================================================================
