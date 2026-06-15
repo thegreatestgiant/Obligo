@@ -9,13 +9,37 @@ import (
 	"github.com/google/uuid"
 )
 
+// ============================================================================
+// CREATE (INSERT)
+// ============================================================================
+
 func (cfg *App) denyList(jti uuid.UUID) {
 	query := "INSERT INTO denylist VALUES ($1, $2)"
-	_, err := cfg.DB.Exec(query, jti, time.Now().Local().Add(cfg.Lifetime))
-	if err != nil {
-		log.Printf("Bad jti or time: %v", jti)
-	}
+	cfg.insertTemplate(query, jti, time.Now().Local().Add(cfg.Lifetime))
 }
+
+func (cfg *App) addRefresh(token string, user_id uuid.UUID, expires time.Time) {
+	query := "INSERT INTO refresh_tokens (token, user_id, expires_at) VALUES ($1, $2, $3)"
+	cfg.insertTemplate(query, token, user_id, expires)
+}
+
+func (cfg *App) setUser(email, username, passwordHash string) error {
+	sqlInsert := "INSERT INTO Users (email,username,password_hash,user_id) VALUES ($1,$2,$3,$4)"
+	return cfg.insertTemplate(sqlInsert, email, username, passwordHash, uuid.New())
+}
+
+func (cfg *App) insertTemplate(query string, fields ...any) error {
+	_, err := cfg.DB.Exec(query, fields)
+	if err != nil {
+		log.Printf("DB Exec Error for query [%s]: %v", query, err)
+		return err
+	}
+	return nil
+}
+
+// ============================================================================
+// READ (SELECT)
+// ============================================================================
 
 func (cfg *App) blacklisted(jti uuid.UUID) bool {
 	query := "SELECT jti FROM denylist WHERE jti=$1"
@@ -45,23 +69,6 @@ func (cfg *App) getRefresh(user_id uuid.UUID) string {
 	}
 	log.Printf("Here is the token: %v ", token)
 	return token
-}
-
-func (cfg *App) revokeRefresh(token string) {
-	query := "UPDATE refresh_tokens SET updated_at=$1, revoked_at=$1 WHERE token=$2"
-
-	_, err := cfg.DB.Exec(query, time.Now(), token)
-	if err != nil {
-		log.Printf("Couldn't revoke refresh token: %v", err)
-	}
-}
-
-func (cfg *App) addRefresh(token string, user_id uuid.UUID, expires time.Time) {
-	query := "INSERT INTO refresh_tokens (token, user_id, expires_at) VALUES ($1, $2, $3)"
-	_, err := cfg.DB.Exec(query, token, user_id, expires)
-	if err != nil {
-		log.Printf("Couldn't create refresh token: %v", err)
-	}
 }
 
 func (cfg *App) getDonationPercent(user_id uuid.UUID) float64 {
@@ -169,17 +176,6 @@ func (cfg *App) getAmountDonated(user_id uuid.UUID) float64 {
 	return donated.Float64
 }
 
-func (cfg *App) getAmountFulfilled(user_id uuid.UUID) float64 {
-	owed := cfg.getAmountOwed(user_id)
-	if owed == 0 {
-		return 0.0
-	}
-	fulfilled := (cfg.getAmountDonated(user_id) / owed) * 100
-
-	log.Printf("Total Percent Fulfilled: %.2f%%", fulfilled)
-	return fulfilled
-}
-
 func (cfg *App) getUser(username string) (uuid.UUID, string) {
 	sqlQuery := "SELECT user_id,password_hash FROM users WHERE username=$1"
 
@@ -197,16 +193,6 @@ func (cfg *App) getUser(username string) (uuid.UUID, string) {
 	return user_id, pass
 }
 
-func (cfg *App) setUser(email, username, passwordHash string) error {
-	sqlInsert := "INSERT INTO Users (email,username,password_hash,user_id) VALUES ($1,$2,$3,$4)"
-
-	_, err := cfg.DB.Query(sqlInsert, email, username, passwordHash, uuid.New())
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (cfg *App) userExists(email, username string) bool {
 	query := "SELECT * FROM users WHERE email=$1 OR username=$2"
 	// Will return nil if empty, and it doesn't exist
@@ -222,6 +208,23 @@ func (cfg *App) userExists(email, username string) bool {
 	return true
 }
 
+// ============================================================================
+// UPDATE
+// ============================================================================
+
+func (cfg *App) revokeRefresh(token string) {
+	query := "UPDATE refresh_tokens SET updated_at=$1, revoked_at=$1 WHERE token=$2"
+
+	_, err := cfg.DB.Exec(query, time.Now(), token)
+	if err != nil {
+		log.Printf("Couldn't revoke refresh token: %v", err)
+	}
+}
+
+// ============================================================================
+// DELETE
+// ============================================================================
+
 func (cfg *App) deleteExpiredJTI() {
 	query := "DELETE FROM denylist WHERE expires_at < Now()"
 	_, err := cfg.DB.Exec(query)
@@ -236,4 +239,19 @@ func (cfg *App) deleteExpiredRefresh() {
 	if err != nil {
 		log.Printf("Couldn't delete: %v", err)
 	}
+}
+
+// ============================================================================
+// LOGIC WRAPPERS (No direct SQL)
+// ============================================================================
+
+func (cfg *App) getAmountFulfilled(user_id uuid.UUID) float64 {
+	owed := cfg.getAmountOwed(user_id)
+	if owed == 0 {
+		return 0.0
+	}
+	fulfilled := (cfg.getAmountDonated(user_id) / owed) * 100
+
+	log.Printf("Total Percent Fulfilled: %.2f%%", fulfilled)
+	return fulfilled
 }
