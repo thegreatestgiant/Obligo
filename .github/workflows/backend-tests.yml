@@ -14,13 +14,13 @@ jobs:
     # This spins up a temporary Postgres database just for the tests!
     services:
       postgres:
-        image: postgres:15-alpine
+        image: postgres:17-alpine
         env:
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpassword
           POSTGRES_DB: charity_test
         ports:
-          - 5432:5432
+          - 5435:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -44,7 +44,7 @@ jobs:
         working-directory: ./backend
         # Inject the environment variables your tests need to connect to the temp DB
         env:
-          DB_URL: "postgres://testuser:testpassword@localhost:5432/charity_test?sslmode=disable"
+          DB_URL: "postgres://testuser:testpassword@localhost:5435/charity_test?sslmode=disable"
           JWT_SECRET: "test_secret_key"
           # Add any other variables your config looks for in the .env file here!
         run: go test -v ./...

@@ -21,7 +21,7 @@ func AuthGuard(next http.Handler, jwt []byte, check func(jti uuid.UUID) bool) fu
 		claims, err := auth.Verifyer(cookie.Value, jwt)
 		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			log.Printf("Couldn't get claims", err)
+			log.Printf("Couldn't get claims: %v", err)
 			return
 		}
 
