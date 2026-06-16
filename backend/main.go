@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/thegreatestgiant/Charity-Tracker/internal/db"
+	"github.com/thegreatestgiant/Charity-Tracker/internal/DB"
 	"github.com/thegreatestgiant/Charity-Tracker/internal/handlers"
 )
 
@@ -17,10 +17,16 @@ func main() {
 	}
 	godotenv.Load(envFile)
 
-	db, err := db.OpenDB(os.Getenv("DB_DEV_URL"))
+	db, err := DB.OpenDB(os.Getenv("DB_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Println("Running migrations...")
+	if err := DB.RunMigrations(db); err != nil {
+		log.Fatalf("Could not migrate database: %v", err)
+	}
+	log.Println("Migrations applied successfully.")
 
 	cfg := &handlers.App{
 		DB:       db,
