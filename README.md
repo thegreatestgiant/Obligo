@@ -19,25 +19,29 @@ For end-user deployment instructions, please read [DEPLOY.md](./DEPLOY.md).
 ## Local Development Setup
 
 **1. Run a local Postgres database:**
-\`\`\`bash
+
+```bash
 docker run --name charity-db -e POSTGRES_USER=user -e POSTGRES_PASSWORD=password -e POSTGRES_DB=charity_db -p 5432:5432 -d postgres:15-alpine
-\`\`\`
+```
 
 **2. Start the Frontend:**
-\`\`\`bash
+
+```bash
 cd frontend
 npm install
 npm run dev
-\`\`\`
+```
 
 **3. Start the Backend:**
 Ensure your `.env` is configured to point to `127.0.0.1:5432`.
-\`\`\`bash
+
+```bash
 cd backend
 go run main.go
-\`\`\`
+```
 
 ## Roadmap
+
 * [x] Graceful shutdown and structured logging (`log/slog`)
 * [x] Docker non-root hardening
 * [x] Self-contained database migrations

@@ -9,21 +9,23 @@ Charity-Tracker is designed to be completely self-contained and simple to deploy
 ## Quickstart
 
 **1. Clone the repository:**
-\`\`\`bash
+
+```bash
 git clone <https://github.com/yourusername/Charity-Tracker.git>
 cd Charity-Tracker
-\`\`\`
+```
 
 **2. Configure your Environment Variables:**
 Copy the example environment file and fill in your details.
-\`\`\`bash
+
+```bash
 cp .env.example .env
-\`\`\`
+```
 
 Inside your `.env` file, ensure the following variables are set.
 *Note: Your `JWT_SECRET` must be a long, highly secure string. You can generate a standard secure string by running `openssl rand -base64 64` in your terminal.*
 
-\`\`\`env
+```env
 
 # .env
 
@@ -34,12 +36,13 @@ DB_PASSWORD=super_secure_db_password
 DB_NAME=charity_db
 
 JWT_SECRET=your_super_long_random_string_here
-\`\`\`
+```
 
 **3. Launch the Application:**
-\`\`\`bash
+
+```bash
 docker-compose up -d --build
-\`\`\`
+```
 
 **4. Access the App:**
 Navigate to your configured `APP_URL` (default: `http://localhost:8080`).
