@@ -42,7 +42,5 @@ jobs:
 
       - name: Run All Tests
         working-directory: ./backend
-        env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         # Inject the environment variables your tests need to connect to the temp DB
         run: go test -v ./...
