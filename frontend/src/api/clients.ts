@@ -1,8 +1,7 @@
-const BASE_URL = "http://localhost:1234";
-
-// Centralized fetch helper to automatically handle credentials and JSON
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
+  const baseUrl = (window as any).API_URL || "";
+
+  const response = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -30,6 +29,19 @@ export const api = {
   // Auth & User
   logout: () => fetchAPI("/logout", { method: "POST" }),
   getSummary: () => fetchAPI("/summary", { method: "GET" }),
+  register: (email: string, username: string, password: string) =>
+    fetchAPI("/register", {
+      method: "POST",
+      body: JSON.stringify({ email, username, password }),
+    }),
+  login: (username: string, password: string) =>
+    fetchAPI("/login", {
+      method: "POST",
+      body: JSON.stringify({
+        username: username,
+        password: password,
+      }),
+    }),
 
   // Ledger Entries
   getEntries: () => fetchAPI("/entries", { method: "GET" }),
@@ -44,4 +56,19 @@ export const api = {
     }),
   getEntry: (id: string) => fetchAPI(`/entries/${id}`, { method: "GET" }),
   deleteEntry: (id: string) => fetchAPI(`/entries/${id}`, { method: "DELETE" }),
+
+  // Settings
+  updatePercent: (percent: number) =>
+    fetchAPI("/users/settings", {
+      method: "PATCH",
+      body: JSON.stringify({ donation_percentage: percent }),
+    }),
+  changePassword: (old_password: string, new_password: string) =>
+    fetchAPI("/users/settings", {
+      method: "PATCH",
+      body: JSON.stringify({
+        old_password: old_password,
+        new_password: new_password,
+      }),
+    }),
 };

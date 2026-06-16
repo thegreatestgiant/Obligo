@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/thegreatestgiant/Charity-Tracker/internal/middleware"
@@ -31,8 +33,23 @@ func StartServer(cfg *App) {
 	mux.HandleFunc("PATCH /users/settings", middleware.AuthGuard(http.HandlerFunc(cfg.updatePercent), cfg.JWT, check))
 	mux.HandleFunc("POST /users/change-password", middleware.AuthGuard(http.HandlerFunc(cfg.changePassword), cfg.JWT, check))
 
-	fs := http.FileServer(http.Dir("../dist"))
-	mux.Handle("/", middleware.SpaFallback(fs, "index.html"))
+	distPath := os.Getenv("DIST_PATH")
+	if distPath == "" {
+		distPath = "../dist" // Default for your local dev setup
+	}
+
+	fs := http.FileServer(http.Dir(distPath))
+	injectHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		htmlPath := filepath.Join(distPath, "index.html")
+		html, _ := os.ReadFile(htmlPath)
+
+		apiURL := os.Getenv("APP_URL")
+		injected := strings.Replace(string(html), `window.API_URL = "";`, fmt.Sprintf(`window.API_URL = "%s";`, apiURL), 1)
+
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(injected))
+	})
+	mux.Handle("/", middleware.SpaFallback(fs, injectHandler))
 
 	fmt.Println("Starting Server")
 	http.ListenAndServe(fmt.Sprintf(":%s", port), middleware.CorsMiddleware(mux))

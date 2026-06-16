@@ -24,7 +24,7 @@ func (r *statusRecorder) Write(msg []byte) (int, error) {
 }
 
 // This wraps any http.Handler and catches 404s
-func SpaFallback(fs http.Handler, fallback string) http.Handler {
+func SpaFallback(fs http.Handler, fallbackHandler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		fs.ServeHTTP(rec, r)

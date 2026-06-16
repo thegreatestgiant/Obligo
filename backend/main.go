@@ -11,7 +11,11 @@ import (
 )
 
 func main() {
-	godotenv.Load(".env")
+	envFile := ".env"
+	if len(os.Args) > 1 {
+		envFile = os.Args[1]
+	}
+	godotenv.Load(envFile)
 
 	db, err := db.OpenDB(os.Getenv("DB_DEV_URL"))
 	if err != nil {

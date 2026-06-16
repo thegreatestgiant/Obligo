@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { api } from "../api/clients";
 
 type ErrorType = {
   username?: string;
@@ -33,17 +34,7 @@ function Login() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:1234/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: formData.username,
-          password: formData.password,
-        }),
-        credentials: "include",
-      });
+      const response = await api.login(formData.username, formData.password);
 
       if (response.ok) {
         await checkAuth();

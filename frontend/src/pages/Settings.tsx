@@ -2,6 +2,7 @@ import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../auth/AuthContext";
 import { useToast } from "../components/Toast";
+import { api } from "../api/clients";
 
 function Settings() {
   const [percent, setPercent] = useState("");
@@ -10,12 +11,7 @@ function Settings() {
 
   const handleUpdatePercent = async () => {
     try {
-      const response = await fetch("http://localhost:1234/users/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ donation_percentage: parseFloat(percent) }),
-        credentials: "include",
-      });
+      const response = await api.updatePercent(parseFloat(percent));
 
       if (response.ok) {
         showToast("Donation percentage updated!", "success"); // Success Toast
@@ -29,18 +25,7 @@ function Settings() {
 
   const handleChangePassword = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:1234/users/change-password",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            old_password: passwords.old,
-            new_password: passwords.new,
-          }),
-          credentials: "include",
-        },
-      );
+      const response = await api.changePassword(passwords.old, passwords.new);
 
       if (response.ok) {
         showToast("Password updated successfully!", "success");

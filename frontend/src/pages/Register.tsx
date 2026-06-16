@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import ".././index.css";
+import { api } from "../api/clients";
 
 type ErrorType = {
   email?: string;
@@ -39,14 +40,11 @@ function Register() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:1234/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData), // You can just pass the whole formData object!
-        credentials: "include",
-      });
+      const response = await api.register(
+        formData.email,
+        formData.username,
+        formData.password,
+      );
 
       if (response.ok) {
         navigate("/login", { replace: true });

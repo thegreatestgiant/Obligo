@@ -30,18 +30,17 @@ migrate-dev:
 	fi
 	psql $(DB_DEV_URL) -f backend/schema/$(FILE)
 
-migrate-prod: 
-	psql $(DB_PROD_URL) -f backend/schema/$(FILE)
-
 db-wipe-dev:
 	psql $(DB_DEV_URL) -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
 db-setup-dev: db-wipe-dev
 	psql $(DB_DEV_URL) -f backend/schema/000_official_look.sql
 
-db-wipe-prod:
-	psql $(DB_PROD_URL) -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+docker-build:
+	docker buildx build --load -t obligo-app .
 
-db-setup-prod: db-wipe-prod
-	psql $(DB_PROD_URL) -f backend/schema/000_official_look.sql
-
+docker-run:
+	docker run -p 8080:1234 \
+		-e APP_PORT=1234 \
+		-e APP_URL=http://localhost:8080 \
+		obligo-app
