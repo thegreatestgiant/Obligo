@@ -209,7 +209,12 @@ func TestSpaFallbackServes200Directly(t *testing.T) {
 		http.NotFound(w, r)
 	})
 
-	handler := SpaFallback(fakeFS, "index.html")
+	fallbackHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("index.html content"))
+	})
+
+	handler := SpaFallback(fakeFS, fallbackHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/existing", nil)
 	rr := httptest.NewRecorder()
@@ -240,7 +245,12 @@ func TestSpaFallbackRedirectsUnknownRoute(t *testing.T) {
 		w.Write([]byte("not found"))
 	})
 
-	handler := SpaFallback(fakeFS, "index.html")
+	fallbackHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("index.html content"))
+	})
+
+	handler := SpaFallback(fakeFS, fallbackHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/dashboard/some/deep/route", nil)
 	rr := httptest.NewRecorder()
@@ -269,7 +279,12 @@ func TestSpaFallbackDoesNotLeakNotFoundBody(t *testing.T) {
 		w.Write([]byte("404 page not found"))
 	})
 
-	handler := SpaFallback(fakeFS, "index.html")
+	fallbackHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("index.html content"))
+	})
+
+	handler := SpaFallback(fakeFS, fallbackHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/nonexistent", nil)
 	rr := httptest.NewRecorder()
