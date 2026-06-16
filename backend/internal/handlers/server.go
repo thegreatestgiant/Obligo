@@ -1,11 +1,17 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
+	"log"
+	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/thegreatestgiant/Charity-Tracker/internal/middleware"
@@ -16,6 +22,9 @@ func StartServer(cfg *App) {
 		return cfg.blacklisted(jti)
 	}
 	port := os.Getenv("APP_PORT")
+	if port == "" {
+		log.Fatal("Missing ENV Variable: APP_URL")
+	}
 
 	mux := http.NewServeMux()
 
@@ -44,6 +53,9 @@ func StartServer(cfg *App) {
 		html, _ := os.ReadFile(htmlPath)
 
 		apiURL := os.Getenv("APP_URL")
+		if apiURL == "" {
+			log.Fatal("Missing ENV Variable: APP_URL")
+		}
 		injected := strings.Replace(string(html), `window.API_URL = "";`, fmt.Sprintf(`window.API_URL = "%s";`, apiURL), 1)
 
 		w.Header().Set("Content-Type", "text/html")
@@ -51,7 +63,36 @@ func StartServer(cfg *App) {
 	})
 	mux.Handle("/", middleware.SpaFallback(fs, injectHandler))
 
-	fmt.Println("Starting Server")
-	http.ListenAndServe(fmt.Sprintf(":%s", port), middleware.CorsMiddleware(mux))
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: middleware.CorsMiddleware(mux),
+	}
+
+	go func() {
+		slog.Info("Starting Server", "port", port)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Server failed to start", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// 2. Set up a channel to listen for Docker/OS stop signals
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	// 3. Block here until a signal is received
+	<-quit
+	slog.Info("Shutdown signal received. Shutting down gracefully...")
+
+	// 4. Give active connections 5 seconds to finish before forcing close
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		slog.Error("Server forced to shutdown", "error", err)
+	}
+
+	// NOTE: If cfg holds your *sql.DB, you should call cfg.DB.Close() here
+	slog.Info("Server stopped cleanly")
 	fmt.Println("Stopping Server")
 }

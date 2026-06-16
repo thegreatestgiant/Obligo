@@ -28,9 +28,14 @@ func main() {
 	}
 	log.Println("Migrations applied successfully.")
 
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		log.Fatalln("JWT Secret ENV Variable not found")
+	}
+
 	cfg := &handlers.App{
 		DB:       db,
-		JWT:      []byte(os.Getenv("JWT_SECRET")),
+		JWT:      []byte(secret),
 		Lifetime: time.Hour * 24,
 	}
 
