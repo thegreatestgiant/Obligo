@@ -1,0 +1,23 @@
+---
+services:
+  db:
+    image: postgres:17-alpine
+    volumes:
+      - ./backend/schema:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: charity
+
+  app:
+    build: .
+    environment:
+      # Use the service name 'db' instead of 'localhost'
+      DB_DEV_URL: "postgres://user:password@db:5432/charity?sslmode=disable"
+      JWT_SECRET: "your_actual_long_secret_string"
+      APP_PORT: "1234"
+      APP_URL: "http://localhost:8080"
+    ports:
+      - "8080:1234"
+    depends_on:
+      - db

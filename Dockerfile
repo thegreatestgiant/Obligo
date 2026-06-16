@@ -32,6 +32,7 @@ COPY --from=backend-builder /app/dist ./dist
 # Set the environment variable so Go knows where to look
 ENV DIST_PATH=/root/dist
 ENV APP_PORT=1234
+ENV APP_URL=http://localhost:8080 
 
 EXPOSE 1234
 CMD ["./obligo"]

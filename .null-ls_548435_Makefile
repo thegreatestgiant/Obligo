@@ -40,4 +40,7 @@ docker-build:
 	docker buildx build --load -t obligo-app .
 
 docker-run:
-	docker compose -f created-compose.yml up
+	docker run -p 8080:1234 \
+		-e APP_PORT=1234 \
+		-e APP_URL=http://localhost:8080 \
+		obligo-app
