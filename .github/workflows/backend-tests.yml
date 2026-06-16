@@ -16,8 +16,8 @@ jobs:
       postgres:
         image: postgres:15-alpine
         env:
-          POSTGRES_USER: ${{ secrets.DB_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASS }}
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: charity_test
         ports:
           - 5435:5432
@@ -42,10 +42,4 @@ jobs:
 
       - name: Run All Tests
         working-directory: ./backend
-        env:
-          # FIX 2: Dynamically build the DB URL using those same secrets!
-          DB_URL: "postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5435/charity_test?sslmode=disable"
-          DATABASE_URL: "postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5435/charity_test?sslmode=disable"
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-        # Inject the environment variables your tests need to connect to the temp DB
         run: go test -v ./...
