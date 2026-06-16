@@ -14,7 +14,7 @@ jobs:
     # This spins up a temporary Postgres database just for the tests!
     services:
       postgres:
-        image: postgres:17-alpine
+        image: postgres:15-alpine
         env:
           POSTGRES_USER: ${{ secrets.DB_USER }}
           POSTGRES_PASSWORD: ${{ secrets.DB_PASS }}
