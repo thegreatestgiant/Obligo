@@ -1,48 +1,88 @@
 # Charity-Tracker
 
-A highly portable, self-contained financial ledger for tracking charitable donations. Built with a Go backend and a React frontend, compiled into a single hardened Docker container.
+Charity-Tracker is a self-hosted web app for tracking your income and your
+charitable giving against each other. You log paychecks as they come in, log
+donations as you make them, and the app tells you what percentage of your
+earnings you've actually given — measured against a giving target you set
+yourself.
 
-## Architecture & Technical Decisions
+It's built for anyone who gives a portion of their income to charity on a
+recurring basis and wants a running, persistent answer to "am I actually
+keeping up with my own goal?" without maintaining a spreadsheet.
 
-Charity-Tracker prioritizes ease of deployment and security over unnecessary complexity.
+## What it does
 
-* **Single Binary Deployment:** The React frontend (`dist` folder) is built and injected directly into the Go server during the Docker build stage.
-* **Dynamic Frontend Injection:** To ensure portability without rebuilding the React app, `window.API_URL` is dynamically injected into `index.html` at runtime by the Go server.
-* **Embedded Migrations (Symlink Strategy):** Database initialization happens automatically on startup. The SQL schemas reside in `backend/schema/`, and a symlink at `backend/internal/DB/schema` allows Go's strict `//go:embed` to package the SQL seamlessly without cluttering the internal structure.
-* **Graceful Shutdowns:** The HTTP server listens for Docker/OS signals (`SIGTERM`/`SIGINT`) and utilizes `context.WithTimeout` to allow active connections 5 seconds to finish before safely killing the process.
-* **Production Hardened Docker:** The final Alpine Linux container runs strictly as an unprivileged, non-root user (`appuser`) for maximum security.
+- **Log paychecks and donations.** Each entry is a simple amount, a type
+  (paycheck or donation), an optional description, and a date.
+- **Set a giving target.** By default, the app assumes you want to give 10%
+  of your earnings to charity, but this is fully customizable per user from
+  the Settings page.
+- **Track progress automatically.** Every time you log a paycheck, the app
+  calculates how much you now owe toward your giving target. Every time you
+  log a donation, it calculates how much of that obligation you've just
+  fulfilled. The dashboard shows your total earned, total donated, total
+  owed, and what percentage of your obligation is fulfilled — updated live
+  as you add entries.
+- **See your history.** A paginated ledger lists every paycheck and donation
+  you've logged, with the ability to delete entries you no longer want.
 
-## Deployment
+## Who it's for
 
-For end-user deployment instructions, please read [DEPLOY.md](./DEPLOY.md).
+This is built as a personal finance tool for a single household or
+individual, not a multi-tenant SaaS product. Each user has their own account,
+their own ledger, and their own giving target — there's no sharing or
+admin/family-account model. It's meant to be self-hosted and run locally or
+on infrastructure you control, not deployed as a public service.
 
-## Local Development Setup
+## How to use it
 
-**1. Run a local Postgres database:**
+1. **Register an account** and log in.
+2. **Set your giving target** under Settings (or leave it at the 10%
+   default).
+3. **Log entries as they happen.** Whenever you get paid, log a paycheck
+   entry for that amount. Whenever you donate, log a donation entry. The app
+   does the percentage math for you.
+4. **Check the dashboard** any time to see your running totals: how much
+   you've earned, how much you owe toward your giving target, how much
+   you've actually given, and what percentage of your obligation is
+   fulfilled.
 
-```bash
-docker run --name charity-db -e POSTGRES_USER=user -e POSTGRES_PASSWORD=password -e POSTGRES_DB=charity_db -p 5432:5432 -d postgres:15-alpine
-```
+One thing worth knowing up front: the amount you "owe" on any given paycheck
+is calculated using your giving target *at the moment you log that
+paycheck*, not recalculated later if you change your target. If you change
+your target percentage, it only affects new entries going forward — your
+history doesn't retroactively change. See
+[DEVELOPERS.md](./DEVELOPERS.md) if you want the full technical explanation
+of why this matters, especially before deleting and re-adding an old entry.
 
-**2. Start the Frontend:**
+## Running it
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+Charity-Tracker ships as a single Docker image with the database
+provisioning handled for you via Docker Compose — see
+[DEPLOY.md](./DEPLOY.md) for setup instructions.
 
-**3. Start the Backend:**
-Ensure your `.env` is configured to point to `127.0.0.1:5432`.
+If you want to work on the project itself rather than just run it, see
+[DEVELOPERS.md](./DEVELOPERS.md) for architecture notes, known gaps, and
+things to watch out for in the code.
 
-```bash
-cd backend
-go run main.go
-```
+## Architecture, in brief
+
+- **Backend:** Go, serving both the API and the built frontend as a single
+  binary.
+- **Frontend:** React + TypeScript + Vite, built and embedded into the Go
+  binary at Docker build time.
+- **Database:** PostgreSQL, with schema migrations embedded in the Go binary
+  and applied automatically on startup.
+- **Deployment:** A single hardened, non-root Docker container, built via
+  GitHub Actions and intended to run alongside a Postgres container via
+  Docker Compose.
+
+For the reasoning behind these choices, and details on things like how the
+frontend gets its API URL at runtime, see [DEVELOPERS.md](./DEVELOPERS.md).
 
 ## Roadmap
 
-* [x] Graceful shutdown and structured logging (`log/slog`)
-* [x] Docker non-root hardening
-* [x] Self-contained database migrations
-* [ ] Implement CSV transaction Export/Import functionality
+- [x] Graceful shutdown and structured logging (`log/slog`)
+- [x] Docker non-root hardening
+- [x] Self-contained database migrations
+- [ ] Implement CSV transaction Export/Import functionality

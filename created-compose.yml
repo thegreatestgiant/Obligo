@@ -10,10 +10,10 @@ services:
       POSTGRES_DB: charity
 
   app:
-    build: .
+    image: thegreatestgiant/obligo
     environment:
       # Use the service name 'db' instead of 'localhost'
-      DB_DEV_URL: "postgres://user:password@db:5432/charity?sslmode=disable"
+      DB_URL: "postgres://user:password@db:5432/charity?sslmode=disable"
       JWT_SECRET: "your_actual_long_secret_string"
       APP_PORT: "1234"
       APP_URL: "http://localhost:8080"
