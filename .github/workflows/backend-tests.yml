@@ -34,7 +34,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22" # Matching your Go version
+          go-version: "1.26" # Matching your Go version
 
       - name: Download Dependencies
         working-directory: ./backend

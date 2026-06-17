@@ -11,7 +11,7 @@ Charity-Tracker is designed to be completely self-contained and simple to deploy
 **1. Clone the repository:**
 
 ```bash
-git clone <https://github.com/yourusername/Charity-Tracker.git>
+git clone https://github.com/yourusername/Charity-Tracker.git
 cd Charity-Tracker
 ```
 

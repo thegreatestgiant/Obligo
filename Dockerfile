@@ -24,7 +24,7 @@ COPY --from=backend-builder /app/dist ./dist
 RUN chown -R appuser:appgroup /app
 
 EXPOSE 1234
-ENV DIST_PATH=/root/dist
+ENV DIST_PATH=/app/dist
 ENV APP_PORT=1234
 
 CMD ["./obligo"]
