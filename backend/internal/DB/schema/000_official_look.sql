@@ -22,7 +22,6 @@ CREATE TABLE IF NOT EXISTS Ledgers (
   amount DECIMAL(18, 2) NOT NULL,
   description TEXT,
   charity_owed DECIMAL(18, 2),
-  charity_fulfilled DECIMAL(18, 2),
   transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES Users (user_id)
 );

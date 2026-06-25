@@ -51,7 +51,7 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		entry.Amount,
 		entry.Description,
 		owed,
-		fulfilled)
+	)
 	if err != nil {
 		http.Error(w, "Bad Query", http.StatusBadRequest)
 		log.Printf("Couldn't add to db: %v", err)

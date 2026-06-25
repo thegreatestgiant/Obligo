@@ -66,13 +66,13 @@ func (cfg *App) setUser(email, username, passwordHash string) error {
 	return cfg.queryExecTemplate(sqlInsert, email, username, passwordHash, uuid.New())
 }
 
-func (cfg *App) insertEntry(user_id uuid.UUID, t EntryType, amount float64, description string, owed, fulfilled float64) (newID int, e error) {
+func (cfg *App) insertEntry(user_id uuid.UUID, t EntryType, amount float64, description string, owed float64) (newID int, e error) {
 	sqlInsert := `INSERT INTO Ledgers 
-	(user_id, ledger_entry, amount, description, charity_owed, charity_fulfilled) 
+	(user_id, ledger_entry, amount, description, charity_owed) 
 	VALUES ($1, $2, $3, $4, $5, $6)
 	RETURNING transaction_id`
 
-	err := cfg.queryReturnTemplate(sqlInsert, []any{&newID}, user_id, t, amount, description, owed, fulfilled)
+	err := cfg.queryReturnTemplate(sqlInsert, []any{&newID}, user_id, t, amount, description, owed)
 	return newID, err
 }
 
@@ -82,7 +82,7 @@ func (cfg *App) insertEntry(user_id uuid.UUID, t EntryType, amount float64, desc
 
 func (cfg *App) getUserEntries(user_id uuid.UUID) ([]Ledger, error) {
 	query := `SELECT transaction_id, ledger_entry, amount, COALESCE(description,'') AS description, 
-	charity_owed, charity_fulfilled, transaction_date 
+	charity_owed, transaction_date 
 	FROM Ledgers 
 	WHERE user_id=$1 
 	ORDER BY transaction_date DESC`
@@ -103,7 +103,6 @@ func (cfg *App) getUserEntries(user_id uuid.UUID) ([]Ledger, error) {
 			&entry.Amount,
 			&entry.Description,
 			&entry.CharityOwed,
-			&entry.CharityFulfilled,
 			&entry.TransactionDate,
 		)
 		if err != nil {
@@ -258,7 +257,7 @@ func (cfg *App) userExists(email, username string) bool {
 // Notice we added user_id to the function arguments!
 func (cfg *App) getEntry(transaction_id string, user_id uuid.UUID) (Ledger, error) {
 	query := `SELECT transaction_id, ledger_entry, amount, COALESCE(description,'') AS description,
-	charity_owed, charity_fulfilled 
+	charity_owed
 	FROM Ledgers 
 	WHERE transaction_id=$1 AND user_id=$2 
 	ORDER BY transaction_date DESC 
@@ -273,7 +272,6 @@ func (cfg *App) getEntry(transaction_id string, user_id uuid.UUID) (Ledger, erro
 		&entry.Amount,
 		&entry.Description,
 		&entry.CharityOwed,
-		&entry.CharityFulfilled,
 	}
 
 	// 2. Pass the query, destination slice, and BOTH arguments to the template

@@ -64,7 +64,6 @@ func TestMain(m *testing.M) {
 			amount DECIMAL(10,2) NOT NULL,
 			description TEXT,
 			charity_owed DECIMAL(10,2),
-			charity_fulfilled DECIMAL(10,2),
 			transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);
 		

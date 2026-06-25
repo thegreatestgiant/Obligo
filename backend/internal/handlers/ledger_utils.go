@@ -23,13 +23,12 @@ func (e EntryType) IsValid() bool {
 }
 
 type Ledger struct {
-	TransactionID    int       `json:"transaction_id"`
-	LedgerEntry      EntryType `json:"ledger_entry"`
-	Amount           float64   `json:"amount"`
-	Description      string    `json:"description"`
-	CharityOwed      float64   `json:"charity_owed"`
-	CharityFulfilled float64   `json:"charity_fulfilled"`
-	TransactionDate  time.Time `json:"transaction_date"`
+	TransactionID   int       `json:"transaction_id"`
+	LedgerEntry     EntryType `json:"ledger_entry"`
+	Amount          float64   `json:"amount"`
+	Description     string    `json:"description"`
+	CharityOwed     float64   `json:"charity_owed"`
+	TransactionDate time.Time `json:"transaction_date"`
 }
 
 func end(w http.ResponseWriter, _ *http.Request, entries []Ledger) {
