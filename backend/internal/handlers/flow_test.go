@@ -28,6 +28,8 @@ func TestUserJourneyEndToEnd(t *testing.T) {
 	mux.HandleFunc("DELETE /entries/{id}", middleware.AuthGuard(http.HandlerFunc(testApp.deleteEntry), testApp.JWT, check))
 	mux.HandleFunc("PATCH /users/settings", middleware.AuthGuard(http.HandlerFunc(testApp.updatePercent), testApp.JWT, check))
 	mux.HandleFunc("GET /summary", middleware.AuthGuard(http.HandlerFunc(testApp.summary), testApp.JWT, check))
+	// NEW: Added the edit route mapping
+	mux.HandleFunc("PATCH /entries/{id}", middleware.AuthGuard(http.HandlerFunc(testApp.editEntry), testApp.JWT, check))
 
 	doReq := func(method, path string, body []byte, cookies []*http.Cookie) *httptest.ResponseRecorder {
 		var req *http.Request
@@ -109,7 +111,6 @@ func TestUserJourneyEndToEnd(t *testing.T) {
 	var summary map[string]float64
 	json.NewDecoder(rrSum.Body).Decode(&summary)
 
-	// Check your actual JSON keys! Usually it's something like TotalEarned or Total_Earned
 	if summary["TotalEarned"] != 1000.0 && summary["Total_Earned"] != 1000.0 {
 		t.Fatalf("Summary math failed! Full summary map: %v", summary)
 	}
@@ -158,7 +159,33 @@ func TestUserJourneyEndToEnd(t *testing.T) {
 		t.Logf("KNOWN ISSUE: IDOR Data Leak! Hacker can view User 1's paycheck!")
 	}
 
-	// --- STEP 10: DELETE ENTRY ---
+	// --- STEP 10: EDIT ENTRY ---
+	// Since user donation % is now 20%, editing the original $1000 paycheck to $2000
+	// should recalculate CharityOwed to $400.
+	editPayload := []byte(`{"amount": 2000, "description":"Edited Salary"}`)
+	rrEdit := doReq(http.MethodPatch, "/entries/"+capturedEntryID, editPayload, []*http.Cookie{sessionCookie})
+	if rrEdit.Code != http.StatusOK {
+		t.Fatalf("Failed to edit entry: %d. Body: %s", rrEdit.Code, rrEdit.Body.String())
+	}
+
+	var editedEntries []Ledger
+	json.NewDecoder(rrEdit.Body).Decode(&editedEntries)
+	if len(editedEntries) == 0 {
+		t.Fatalf("Expected edited entry array, got empty")
+	}
+	editedEntry := editedEntries[0]
+
+	if editedEntry.Amount != 2000.0 {
+		t.Fatalf("Edit failed! Expected Amount 2000, got %.2f", editedEntry.Amount)
+	}
+	if editedEntry.Description != "Edited Salary" {
+		t.Fatalf("Edit failed! Expected Description 'Edited Salary', got '%s'", editedEntry.Description)
+	}
+	if editedEntry.CharityOwed != 400.0 {
+		t.Fatalf("Edit Recalculation Error! Expected CharityOwed 400, got %.2f", editedEntry.CharityOwed)
+	}
+
+	// --- STEP 11: DELETE ENTRY ---
 	rrDel := doReq(http.MethodDelete, "/entries/"+capturedEntryID, nil, []*http.Cookie{sessionCookie})
 	if rrDel.Code != http.StatusOK {
 		t.Fatalf("Failed to delete entry: %d", rrDel.Code)
