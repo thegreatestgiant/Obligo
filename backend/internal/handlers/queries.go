@@ -69,7 +69,7 @@ func (cfg *App) setUser(email, username, passwordHash string) error {
 func (cfg *App) insertEntry(user_id uuid.UUID, t EntryType, amount float64, description string, owed float64) (newID int, e error) {
 	sqlInsert := `INSERT INTO Ledgers 
 	(user_id, ledger_entry, amount, description, charity_owed) 
-	VALUES ($1, $2, $3, $4, $5, $6)
+	VALUES ($1, $2, $3, $4, $5)
 	RETURNING transaction_id`
 
 	err := cfg.queryReturnTemplate(sqlInsert, []any{&newID}, user_id, t, amount, description, owed)
