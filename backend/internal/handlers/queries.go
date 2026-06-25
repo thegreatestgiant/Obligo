@@ -311,6 +311,13 @@ func (cfg *App) updatePassword(pass []byte, user_id uuid.UUID) error {
 	return cfg.queryExecTemplate(updateQuery, pass, user_id)
 }
 
+func (cfg *App) updateEntry(amount, owed float64, description, transaction_id string, user_id uuid.UUID) error {
+	updateQuery := `UPDATE Ledgers SET 
+	amount=$1, charity_owed=$2, description=$3 
+	WHERE user_id=$4 AND transaction_id=$5`
+	return cfg.queryExecTemplate(updateQuery, amount, owed, description, user_id, transaction_id)
+}
+
 // ============================================================================
 // DELETE
 // ============================================================================

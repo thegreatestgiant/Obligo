@@ -35,6 +35,7 @@ func StartServer(cfg *App) {
 	mux.HandleFunc("POST /refresh", middleware.AuthGuard(http.HandlerFunc(cfg.refresh), cfg.JWT, check))
 	mux.HandleFunc("POST /revoke", middleware.AuthGuard(http.HandlerFunc(cfg.revoke), cfg.JWT, check))
 	mux.HandleFunc("POST /entries", middleware.AuthGuard(http.HandlerFunc(cfg.setEntry), cfg.JWT, check))
+	mux.HandleFunc("PATCH /entries/{id}", middleware.AuthGuard(http.HandlerFunc(cfg.editEntry), cfg.JWT, check))
 	mux.HandleFunc("DELETE /entries/{id}", middleware.AuthGuard(http.HandlerFunc(cfg.deleteEntry), cfg.JWT, check))
 	mux.HandleFunc("GET /entries", middleware.AuthGuard(http.HandlerFunc(cfg.getEntries), cfg.JWT, check))
 	mux.HandleFunc("GET /entries/{id}", middleware.AuthGuard(http.HandlerFunc(cfg.getAnEntry), cfg.JWT, check))
