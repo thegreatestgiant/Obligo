@@ -34,6 +34,8 @@ func StartServer(cfg *App) {
 	mux.HandleFunc("POST /logout", cfg.Logout)
 	mux.HandleFunc("POST /refresh", middleware.AuthGuard(http.HandlerFunc(cfg.refresh), cfg.JWT, check))
 	mux.HandleFunc("POST /revoke", middleware.AuthGuard(http.HandlerFunc(cfg.revoke), cfg.JWT, check))
+	mux.HandleFunc("GET /entries/export", middleware.AuthGuard(http.HandlerFunc(cfg.ExportCSV), cfg.JWT, check))
+	mux.HandleFunc("POST /entries/import", middleware.AuthGuard(http.HandlerFunc(cfg.ImportCSV), cfg.JWT, check))
 	mux.HandleFunc("POST /entries", middleware.AuthGuard(http.HandlerFunc(cfg.setEntry), cfg.JWT, check))
 	mux.HandleFunc("PATCH /entries/{id}", middleware.AuthGuard(http.HandlerFunc(cfg.editEntry), cfg.JWT, check))
 	mux.HandleFunc("DELETE /entries/{id}", middleware.AuthGuard(http.HandlerFunc(cfg.deleteEntry), cfg.JWT, check))

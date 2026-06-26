@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 func (cfg *App) executeTemplate(query string, args ...any) (int64, error) {
@@ -79,6 +80,40 @@ func (cfg *App) insertEntry(user_id uuid.UUID, t EntryType, amount float64, desc
 // ============================================================================
 // READ (SELECT)
 // ============================================================================
+
+func (cfg *App) getDups(user_id uuid.UUID, ids []string) ([]string, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	getRows := `
+		SELECT transaction_id 
+		FROM Ledgers 
+		WHERE user_id = $1 
+		AND transaction_id = ANY($2::int[])
+	`
+
+	rows, err := cfg.queryTemplate(getRows, user_id, pq.Array(ids))
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+	var duplicateIDs []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		duplicateIDs = append(duplicateIDs, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return duplicateIDs, nil
+}
 
 func (cfg *App) getUserEntries(user_id uuid.UUID) ([]Ledger, error) {
 	query := `SELECT transaction_id, ledger_entry, amount, COALESCE(description,'') AS description, 
