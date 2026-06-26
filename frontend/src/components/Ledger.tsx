@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "./Toast";
 import { useAuth } from "../auth/AuthContext";
 import { formatCurrency } from "../utils/formatter";
@@ -22,6 +22,8 @@ export default function Ledger() {
   const itemsPerPage = 8;
   const showToast = useToast();
   const { checkAuth } = useAuth();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = async (id: string) => {
     try {
@@ -37,6 +39,57 @@ export default function Ledger() {
     } catch (err: any) {
       if (err.message === "Unauthorized") return;
       showToast("Network error.", "error");
+    }
+  };
+  const handleEditClick = (entry: Entry) => {
+    setEditingId(entry.transaction_id);
+    setAmount(entry.amount.toString());
+    setDescription(entry.description);
+    setType(entry.ledger_entry);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setAmount("");
+    setDescription("");
+    setType("paycheck");
+  };
+
+  const handleExport = async () => {
+    try {
+      const res = await api.exportCSV();
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ledger.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      showToast("Failed to export data.", "error");
+    }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const res = await api.importCSV(file);
+      const data = await res.json();
+      showToast(
+        `Imported ${data.inserted} rows. (Skipped ${data.skipped} duplicates)`,
+        "success",
+      );
+      await fetchEntries();
+      await checkAuth(true);
+    } catch (err) {
+      showToast("Failed to import data. Check file format.", "error");
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -64,24 +117,30 @@ export default function Ledger() {
       setCurrentPage(maxPages);
     }
   }, [entries.length, currentPage, itemsPerPage]);
-  const handleSubmit = async (e: { preventDefault: () => void }) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const res = await api.createEntry(parseFloat(amount), type, description);
+      let res;
+      if (editingId) {
+        res = await api.editEntry(editingId, parseFloat(amount), description);
+      } else {
+        res = await api.createEntry(parseFloat(amount), type, description);
+      }
 
       if (res.ok) {
-        showToast("Entry added successfully!", "success");
-        setAmount("");
-        setDescription("");
+        showToast(
+          editingId ? "Entry updated!" : "Entry added successfully!",
+          "success",
+        );
+        resetForm();
         setCurrentPage(1);
-
-        // Refresh the table and the global dashboard numbers!
         await fetchEntries();
         await checkAuth(true);
       } else {
-        showToast("Failed to add entry.", "error");
+        showToast("Failed to save entry.", "error");
       }
     } catch (err: any) {
       if (err.message === "Unauthorized") return;
@@ -95,14 +154,26 @@ export default function Ledger() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
       {/* LEFT COLUMN: Add Entry Form */}
       <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm h-fit">
-        <h2 className="text-lg font-semibold text-white mb-4">
-          Log New Transaction
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-white">
+            {editingId ? "Edit Transaction" : "Log New Transaction"}
+          </h2>
+          {editingId && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="text-sm text-slate-400 hover:text-white"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Type Toggle */}
           <div className="flex rounded-lg bg-slate-950 p-1 border border-slate-800">
             <button
               type="button"
+              disabled={!!editingId}
               onClick={() => setType("paycheck")}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                 type === "paycheck"
@@ -114,6 +185,7 @@ export default function Ledger() {
             </button>
             <button
               type="button"
+              disabled={!!editingId}
               onClick={() => setType("donation")}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                 type === "donation"
@@ -156,19 +228,47 @@ export default function Ledger() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-lg transition-colors disabled:opacity-50"
+            className={`w-full font-bold py-2.5 rounded-lg transition-colors disabled:opacity-50 text-white ${
+              editingId
+                ? "bg-amber-600 hover:bg-amber-500"
+                : "bg-indigo-600 hover:bg-indigo-500"
+            }`}
           >
-            {isSubmitting ? "Saving..." : "Save Entry"}
+            {isSubmitting
+              ? "Saving..."
+              : editingId
+                ? "Update Entry"
+                : "Save Entry"}
           </button>
         </form>
       </div>
 
       {/* RIGHT COLUMN: Recent History (Paginated) */}
       <div className="lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
           <h2 className="text-lg font-semibold text-white">Recent History</h2>
+
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            <input
+              type="file"
+              accept=".csv"
+              ref={fileInputRef}
+              onChange={handleImport}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md transition-colors"
+            >
+              Import CSV
+            </button>
+            <button
+              onClick={handleExport}
+              className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md transition-colors"
+            >
+              Export CSV
+            </button>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest border-l border-slate-700 pl-3">
               Page {currentPage} /{" "}
               {Math.max(1, Math.ceil(entries.length / itemsPerPage))}
             </span>
@@ -232,6 +332,28 @@ export default function Ledger() {
                             {entry.ledger_entry === "paycheck" ? "+" : "-"}
                             {formatCurrency(entry.amount)}
                           </span>
+
+                          {/* Edit Icon */}
+                          <button
+                            onClick={() => handleEditClick(entry)}
+                            className="text-slate-600 hover:text-amber-500 transition-opacity opacity-0 group-hover:opacity-100"
+                            title="Edit Entry"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                          </button>
 
                           {/* Trash Can Icon */}
                           <button

@@ -4,6 +4,7 @@ import { formatCurrency } from "../utils/formatter";
 import GoalWidget from "./GoalWidget";
 import IndexAnchor from "./IndexAnchor";
 import KPICard from "./KPICard";
+import { useState } from "react";
 
 export default function Summary() {
   const { user, isLoading } = useAuth();
@@ -28,9 +29,15 @@ export default function Summary() {
       target: totalOwed,
     },
   ];
-
   return (
     <div className="space-y-12">
+      <div className="flex items-center gap-2 mb-6">
+        {user && (
+          <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full">
+            Current Goal: {user.Donation_Percent}% Maaser
+          </span>
+        )}
+      </div>
       {/* TIER 1: PUNK KPI ROW */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <KPICard
@@ -52,7 +59,6 @@ export default function Summary() {
           percent={percentOwed + "%"}
         />
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-0">
         <GoalWidget totalTarget={totalOwed} totalDonated={totalDonated} />
         <IndexAnchor data={chartData} title="Cumulative Cashflow Overview" />

@@ -56,6 +56,34 @@ export const api = {
     }),
   getEntry: (id: string) => fetchAPI(`/entries/${id}`, { method: "GET" }),
   deleteEntry: (id: string) => fetchAPI(`/entries/${id}`, { method: "DELETE" }),
+  editEntry: (id: string, amount: number, description: string) =>
+    fetchAPI(`/entries/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ amount, description }),
+    }),
+
+  // CSV
+  exportCSV: () => fetchAPI("/entries/export", { method: "GET" }),
+  importCSV: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const baseUrl = (window as any).API_URL || "";
+    const response = await fetch(`${baseUrl}/entries/import`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+
+    if (response.status === 401) {
+      window.dispatchEvent(new Event("auth-expired"));
+      throw new Error("Unauthorized");
+    }
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+    return response;
+  },
 
   // Settings
   updatePercent: (percent: number) =>
