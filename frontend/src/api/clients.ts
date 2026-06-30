@@ -56,7 +56,7 @@ export const api = {
     }),
   getEntry: (id: string) => fetchAPI(`/entries/${id}`, { method: "GET" }),
   deleteEntry: (id: string) => fetchAPI(`/entries/${id}`, { method: "DELETE" }),
-  editEntry: (id: string, amount: number, description: string) =>
+  editEntry: (id: string, amount?: number, description?: string) =>
     fetchAPI(`/entries/${id}`, {
       method: "PATCH",
       body: JSON.stringify({ amount, description }),

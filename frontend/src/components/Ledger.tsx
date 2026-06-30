@@ -18,6 +18,10 @@ export default function Ledger() {
   const [type, setType] = useState<"paycheck" | "donation">("paycheck");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [originalAmount, setOriginalAmount] = useState<number | null>(null);
+  const [originalDescription, setOriginalDescription] = useState<string | null>(
+    null,
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const showToast = useToast();
@@ -45,6 +49,8 @@ export default function Ledger() {
     setEditingId(entry.transaction_id);
     setAmount(entry.amount.toString());
     setDescription(entry.description);
+    setOriginalAmount(entry.amount);
+    setOriginalDescription(entry.description);
     setType(entry.ledger_entry);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -52,7 +58,9 @@ export default function Ledger() {
   const resetForm = () => {
     setEditingId(null);
     setAmount("");
+    setOriginalAmount(null);
     setDescription("");
+    setOriginalDescription(null);
     setType("paycheck");
   };
 
@@ -125,7 +133,14 @@ export default function Ledger() {
     try {
       let res;
       if (editingId) {
-        res = await api.editEntry(editingId, parseFloat(amount), description);
+        const changedAmount =
+          parseFloat(amount) !== originalAmount
+            ? parseFloat(amount)
+            : undefined;
+        const changedDescription =
+          description !== originalDescription ? description : undefined;
+
+        res = await api.editEntry(editingId, changedAmount, changedDescription);
       } else {
         res = await api.createEntry(parseFloat(amount), type, description);
       }
