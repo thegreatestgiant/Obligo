@@ -61,6 +61,11 @@ func (cfg *App) ImportCSV(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dups, err := cfg.getDups(user_id, transactionIDs)
+	if err != nil {
+		log.Printf("DB error checking duplicates: %v", err)
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
 	result.Skipped = len(dups)
 	if len(dups) != 0 && len(dups) == len(transactionIDs) {
 		result.Inserted = 0
@@ -92,9 +97,9 @@ func (cfg *App) ImportCSV(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		if len(row) < 2 {
-			log.Printf("Row %d is missing columns", i+2)
-			http.Error(w, fmt.Sprintf("Row %d is missing columns", i+2), http.StatusBadRequest)
+		if len(row) < 5 {
+			log.Printf("Row %d is missing columns. Expected at least 5, got %d", i+2, len(row))
+			http.Error(w, fmt.Sprintf("Row %d is missing columns. Please check your CSV format.", i+2), http.StatusBadRequest)
 			return
 		}
 

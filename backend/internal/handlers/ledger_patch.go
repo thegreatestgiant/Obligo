@@ -26,7 +26,11 @@ func (cfg *App) editEntry(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Fetching entry ID: %s for User: %s", id, user_id)
 
 	var body update
-	json.NewDecoder(r.Body).Decode(&body)
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Printf("Failed to decode patch body: %v", err)
+		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		return
+	}
 	defer r.Body.Close()
 
 	entry, err := cfg.getEntry(id, user_id)
