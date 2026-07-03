@@ -155,6 +155,48 @@ func (cfg *App) getUserEntries(user_id uuid.UUID) ([]Ledger, error) {
 	return entries, nil
 }
 
+func (cfg *App) getMonthlySummary(user_id uuid.UUID) ([]monthlySummary, error) {
+	query := `SELECT
+  date_trunc('month', transaction_date) AS bucket,
+  ledger_entry,
+  SUM(amount) AS total_amount,
+  SUM(charity_owed) AS total_owed
+	FROM Ledgers
+	WHERE user_id = $1
+	GROUP BY bucket, ledger_entry
+	ORDER BY bucket`
+
+	rows, err := cfg.queryTemplate(query, user_id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	summaries := []monthlySummary{}
+
+	for rows.Next() {
+		var entry monthlySummary
+		err := rows.Scan(
+			&entry.Month,
+			&entry.Type,
+			&entry.Amount,
+			&entry.Charity_owed,
+		)
+		if err != nil {
+			log.Printf("Couldn't scan row: %v", err)
+			continue
+		}
+		summaries = append(summaries, entry)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Printf("Error iterating rows: %v", err)
+		return nil, err
+	}
+
+	return summaries, nil
+}
+
 func (cfg *App) getPass(user_id uuid.UUID) (string, error) {
 	getQuery := "SELECT password_hash FROM users WHERE user_id=$1"
 	var pass string

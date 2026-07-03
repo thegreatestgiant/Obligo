@@ -28,7 +28,7 @@ func TestUserJourneyEndToEnd(t *testing.T) {
 	mux.HandleFunc("DELETE /entries/{id}", middleware.AuthGuard(http.HandlerFunc(testApp.deleteEntry), testApp.JWT, check))
 	mux.HandleFunc("PATCH /users/settings", middleware.AuthGuard(http.HandlerFunc(testApp.updatePercent), testApp.JWT, check))
 	mux.HandleFunc("GET /summary", middleware.AuthGuard(http.HandlerFunc(testApp.summary), testApp.JWT, check))
-	// NEW: Added the edit route mapping
+	mux.HandleFunc("GET /summary/monthly", middleware.AuthGuard(http.HandlerFunc(testApp.summaryMonthly), testApp.JWT, check))
 	mux.HandleFunc("PATCH /entries/{id}", middleware.AuthGuard(http.HandlerFunc(testApp.editEntry), testApp.JWT, check))
 
 	doReq := func(method, path string, body []byte, cookies []*http.Cookie) *httptest.ResponseRecorder {
@@ -183,6 +183,46 @@ func TestUserJourneyEndToEnd(t *testing.T) {
 	}
 	if editedEntry.CharityOwed != 400.0 {
 		t.Fatalf("Edit Recalculation Error! Expected CharityOwed 400, got %.2f", editedEntry.CharityOwed)
+	}
+
+	// --- STEP 10.5: GET MONTHLY SUMMARY ---
+	// We want to test our new summaryMonthly logic.
+	// Based on earlier steps, we have a $2000 paycheck and a $1000 paycheck.
+	rrSumMonthly := doReq(http.MethodGet, "/summary/monthly", nil, []*http.Cookie{sessionCookie})
+	if rrSumMonthly.Code != http.StatusOK {
+		t.Fatalf("Failed to get monthly summary: %d", rrSumMonthly.Code)
+	}
+
+	// Because we are returning a slice of structs, we decode into a slice of maps
+	var monthlySummaries []map[string]interface{}
+	err := json.NewDecoder(rrSumMonthly.Body).Decode(&monthlySummaries)
+	if err != nil {
+		t.Fatalf("Failed to decode monthly summary: %v", err)
+	}
+
+	// Ensure we got at least one month of data back
+	if len(monthlySummaries) == 0 {
+		t.Fatalf("Expected at least 1 month in summary, got 0")
+	}
+
+	// Since all tests run rapidly, everything should be grouped into the current month (index 0)
+	currentMonthData := monthlySummaries[0]
+
+	// JSON unmarshals numbers into float64 automatically when targeting an interface{}
+	totalEarned, _ := currentMonthData["earned"].(float64)
+	totalTarget, _ := currentMonthData["target"].(float64)
+
+	if totalEarned != 3000.0 {
+		t.Fatalf("Monthly Summary Math Error! Expected Earned to be 3000, got %.2f", totalEarned)
+	}
+	if totalTarget != 600.0 {
+		t.Fatalf("Monthly Summary Math Error! Expected Target (owed) to be 600, got %.2f", totalTarget)
+	}
+
+	// Make sure the month string formatted correctly (it shouldn't be empty)
+	monthString, _ := currentMonthData["month"].(string)
+	if monthString == "" {
+		t.Fatalf("Monthly Summary Date Error! Month string is empty.")
 	}
 
 	// --- STEP 11: DELETE ENTRY ---
