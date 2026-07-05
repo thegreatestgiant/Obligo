@@ -88,7 +88,7 @@ function Register() {
             Create an Account
           </h2>
           <p className="mt-3 text-center text-sm text-slate-400">
-            Enter your details to register for MaaserCalc.
+            Enter your details to register for Obligo.
           </p>
         </div>
 

@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/thegreatestgiant/Charity-Tracker/internal/middleware"
+	"github.com/thegreatestgiant/obligo/internal/middleware"
 )
 
 func StartServer(cfg *App) {

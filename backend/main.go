@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/thegreatestgiant/Charity-Tracker/internal/DB"
-	"github.com/thegreatestgiant/Charity-Tracker/internal/handlers"
+	"github.com/thegreatestgiant/obligo/internal/DB"
+	"github.com/thegreatestgiant/obligo/internal/handlers"
 )
 
 func main() {

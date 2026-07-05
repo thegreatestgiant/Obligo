@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/thegreatestgiant/Charity-Tracker/internal/auth"
+	"github.com/thegreatestgiant/obligo/internal/auth"
 )
 
 func AuthGuard(next http.Handler, jwt []byte, check func(jti uuid.UUID) bool) func(http.ResponseWriter, *http.Request) {

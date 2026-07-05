@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/thegreatestgiant/Charity-Tracker/internal/middleware"
+	"github.com/thegreatestgiant/obligo/internal/middleware"
 )
 
 func TestUserJourneyEndToEnd(t *testing.T) {

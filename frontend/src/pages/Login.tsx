@@ -79,7 +79,7 @@ function Login() {
             Welcome back
           </h2>
           <p className="mt-3 text-center text-sm text-slate-400">
-            Enter your details to access your MaaserCalc dashboard.
+            Enter your details to access your Obligo dashboard.
           </p>
         </div>
 
