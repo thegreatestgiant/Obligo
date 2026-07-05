@@ -2,22 +2,33 @@
 services:
   db:
     image: postgres:17-alpine
+    restart: unless-stopped
     volumes:
+      - db_data:/var/lib/postgresql/data
       - ./backend/schema:/docker-entrypoint-initdb.d
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: charity
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-charity}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-charity}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   app:
     image: thegreatestgiant/obligo
+    restart: unless-stopped
     environment:
-      # Use the service name 'db' instead of 'localhost'
-      DB_URL: "postgres://user:password@db:5432/charity?sslmode=disable"
-      JWT_SECRET: "your_actual_long_secret_string"
-      APP_PORT: "1234"
-      APP_URL: "http://localhost:8080"
+      DB_URL: "postgres://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-charity}?sslmode=disable"
+      JWT_SECRET: ${JWT_SECRET:-"your_actual_long_secret_string"}
+      APP_PORT: ${APP_PORT:-1234}
+      APP_URL: ${APP_URL:-"http://localhost:8080"}
     ports:
-      - "8080:${APP_PORT}"
+      - "8080:${APP_PORT:-1234}"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:
