@@ -29,6 +29,7 @@ export const api = {
   // Auth & User
   logout: () => fetchAPI("/logout", { method: "POST" }),
   getSummary: () => fetchAPI("/summary", { method: "GET" }),
+  getMonthlySummary: () => fetchAPI("/summary/monthly", { method: "GET" }),
   register: (email: string, username: string, password: string) =>
     fetchAPI("/register", {
       method: "POST",

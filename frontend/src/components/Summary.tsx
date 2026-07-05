@@ -4,10 +4,20 @@ import { formatCurrency } from "../utils/formatter";
 import GoalWidget from "./GoalWidget";
 import IndexAnchor from "./IndexAnchor";
 import KPICard from "./KPICard";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../api/clients";
+
+type Monthly = {
+  month: string;
+  donated: number;
+  earned: number;
+  target: number;
+};
 
 export default function Summary() {
   const { user, isLoading } = useAuth();
+
+  const [monthlies, setMonthlies] = useState<Monthly[]>([]);
 
   if (isLoading) return <Loading />;
 
@@ -20,15 +30,23 @@ export default function Summary() {
   const percentOwed =
     totalOwed > 0 ? ((remaining / totalOwed) * 100).toFixed(1) : "0.0";
 
-  // Mocked data for the trend chart (using the structure your chart component expects)
-  const chartData = [
-    {
-      month: "Current",
-      earned: totalEarned,
-      donated: totalDonated,
-      target: totalOwed,
-    },
-  ];
+  const getMonthly = async () => {
+    const res = await api.getMonthlySummary();
+    if (res.ok) {
+      if (res.status === 204) {
+        setMonthlies([]);
+        return;
+      }
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : [];
+      setMonthlies(data || []);
+    }
+  };
+
+  useEffect(() => {
+    getMonthly();
+  }, []);
+
   return (
     <div className="space-y-12">
       <div className="flex items-center gap-2 mb-6">
@@ -61,7 +79,8 @@ export default function Summary() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-0">
         <GoalWidget totalTarget={totalOwed} totalDonated={totalDonated} />
-        <IndexAnchor data={chartData} title="Cumulative Cashflow Overview" />
+        {/* The data flows natively into the chart right here */}
+        <IndexAnchor data={monthlies} title="Cumulative Cashflow Overview" />
       </div>
     </div>
   );
