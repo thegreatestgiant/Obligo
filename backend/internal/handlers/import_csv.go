@@ -69,7 +69,7 @@ func (cfg *App) ImportCSV(w http.ResponseWriter, r *http.Request) {
 	result.Skipped = len(dups)
 	if len(dups) != 0 && len(dups) == len(transactionIDs) {
 		result.Inserted = 0
-		result.Message = "They where all duplicates"
+		result.Message = "They were all duplicates"
 		log.Println("All the imported rows where duplicates")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(result)
