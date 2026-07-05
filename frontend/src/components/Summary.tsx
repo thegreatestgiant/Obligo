@@ -44,8 +44,22 @@ export default function Summary() {
   };
 
   useEffect(() => {
+    // 1. Fetch data initially when the component loads
     getMonthly();
-  }, []);
+
+    // 2. Define what happens when we hear the event
+    const handleLedgerUpdate = () => {
+      getMonthly();
+    };
+
+    // 3. Start listening for the custom event we created in Ledger.tsx
+    window.addEventListener("ledger-updated", handleLedgerUpdate);
+
+    // 4. Clean up the listener if the user navigates away from the component
+    return () => {
+      window.removeEventListener("ledger-updated", handleLedgerUpdate);
+    };
+  }, []); // The empty array ensures this listener is only attached once
 
   return (
     <div className="space-y-12">

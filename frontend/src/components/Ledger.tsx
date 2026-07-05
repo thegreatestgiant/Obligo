@@ -37,6 +37,7 @@ export default function Ledger() {
         // setCurrentPage(1);
         await fetchEntries(); // Refresh data
         await checkAuth(true); // Sync global dashboard numbers
+        window.dispatchEvent(new Event("ledger-updated"));
       } else {
         showToast("Failed to delete.", "error");
       }
@@ -94,6 +95,7 @@ export default function Ledger() {
       );
       await fetchEntries();
       await checkAuth(true);
+      window.dispatchEvent(new Event("ledger-updated"));
     } catch (err) {
       showToast("Failed to import data. Check file format.", "error");
     } finally {
@@ -154,6 +156,7 @@ export default function Ledger() {
         setCurrentPage(1);
         await fetchEntries();
         await checkAuth(true);
+        window.dispatchEvent(new Event("ledger-updated"));
       } else {
         showToast("Failed to save entry.", "error");
       }
