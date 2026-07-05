@@ -1,6 +1,6 @@
-# Deploying Charity-Tracker
+# Deploying Obligo
 
-Charity-Tracker is published as a single Docker image with the frontend
+Obligo is published as a single Docker image with the frontend
 already built in. You don't need to clone the source code or build anything
 yourself to run it — you only need the image and a small set of config files.
 
