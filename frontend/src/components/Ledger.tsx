@@ -160,6 +160,18 @@ export default function Ledger() {
     }
   };
 
+  // Listen for the Escape key to exit edit mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && editingId) {
+        resetForm();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [editingId]);
+
   useEffect(() => {
     fetchEntries();
   }, []);
@@ -196,7 +208,6 @@ export default function Ledger() {
           "success",
         );
 
-        // This is the fix! We only go to page 1 if it's a new entry.
         if (!editingId) {
           setCurrentPage(1);
         }
@@ -244,6 +255,7 @@ export default function Ledger() {
                 type="button"
                 onClick={resetForm}
                 className="text-sm text-slate-400 hover:text-white transition-colors"
+                title="Press Esc to cancel"
               >
                 Cancel
               </button>
