@@ -6,11 +6,11 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: ${POSTGRES_DB:-charity}
+      POSTGRES_USER: ${DB_USER:-user}
+      POSTGRES_PASSWORD: ${DB_PASS:-password}
+      POSTGRES_DB: ${DEV_NAME:-charity}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-charity}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-user} -d ${DEV_NAME:-charity}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -19,7 +19,7 @@ services:
     image: thegreatestgiant/obligo
     restart: unless-stopped
     environment:
-      DB_URL: "postgres://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-charity}?sslmode=disable"
+      DB_URL: "postgres://${DB_USER:-user}:${DB_PASS:-password}@db:5432/${DEV_NAME:-charity}?sslmode=disable"
       JWT_SECRET: ${JWT_SECRET:-"your_actual_long_secret_string"}
       APP_PORT: ${APP_PORT:-1234}
       APP_URL: ${APP_URL:-"http://localhost:8080"}

@@ -2,7 +2,7 @@
 
 Obligo is published as a single Docker image with the frontend
 already built in. You don't need to clone the source code or build anything
-yourself to run it — you only need the image and a small set of config files.
+yourself to run it—you only need the image and a small set of config files.
 
 ## Prerequisites
 
@@ -13,9 +13,9 @@ yourself to run it — you only need the image and a small set of config files.
 You need exactly three things in a directory on your deploy machine:
 
 1. A `docker-compose.yml` that defines the app container (pulling the
-   published image) and a Postgres container for it to talk to.
+   published image) and a Postgres container for it to connect to.
 2. A `.env` file with your own secrets and settings.
-3. Nothing else — no source code, no `node_modules`, no Go toolchain.
+3. Nothing else—no source code, no `node_modules`, no Go toolchain.
 
 > **Before you use this file:** the compose example below assumes
 > `APP_PORT` is wired all the way through as a variable, on both the
@@ -31,42 +31,51 @@ You need exactly three things in a directory on your deploy machine:
 services:
   db:
     image: postgres:17-alpine
-    restart: always
+    restart: unless-stopped
+    volumes:
+      - db_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASS}
-      POSTGRES_DB: ${DEV_NAME}
+      POSTGRES_USER: ${DB_USER:-user}
+      POSTGRES_PASSWORD: ${DB_PASS:-password}
+      POSTGRES_DB: ${DEV_NAME:-charity}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-user} -d ${DEV_NAME:-charity}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   app:
     image: thegreatestgiant/obligo
-    restart: always
+    restart: unless-stopped
     environment:
-      # Use the service name 'db', not 'localhost' — Docker Compose
-      # resolves service names to the right container on its internal network.
-      DB_URL: "postgres://${DB_USER}:${DB_PASS}@db:5432/${DEV_NAME}?sslmode=disable"
-      JWT_SECRET: ${JWT_SECRET}
-      APP_PORT: ${APP_PORT}
-      APP_URL: ${APP_URL}
+      DB_URL: "postgres://${DB_USER:-user}:${DB_PASS:-password}@db:5432/${DEV_NAME:-charity}?sslmode=disable"
+      JWT_SECRET: ${JWT_SECRET:-"your_actual_long_secret_string"}
+      APP_PORT: ${APP_PORT:-1234}
+      APP_URL: ${APP_URL:-"http://localhost:8080"}
     ports:
-      - "8080:${APP_PORT}"
+      - "8080:${APP_PORT:-1234}"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:
 ```
 
 A couple of things worth understanding about that `ports` line, since it's
 easy to get backwards:
 
-* The **left** side (`8080`) is the port *on your host machine* — this is
+* The **left** side (`8080`) is the port *on your host machine*—this is
   what you put in your browser's address bar (via `APP_URL`).
 * The **right** side (`${APP_PORT}`) is the port the app actually listens on
   *inside the container*. This has to match whatever value you set
   `APP_PORT` to in your `.env`, because the app reads that same variable at
-  startup to decide what port to bind to. If these two ever get out of sync
-  — say, `APP_PORT` gets changed in `.env` but the compose file still has a
-  literal number hardcoded on the right side — the app will be listening on
+  startup to decide what port to bind to. If these two ever get out of sync—
+  say, `APP_PORT` gets changed in `.env` but the compose file still has a
+  literal number hardcoded on the right side—the app will be listening on
   one port while Docker forwards traffic to a different one, and the
   deployment will silently fail to respond.
-* The host-side `8080` doesn't have to match `APP_PORT` at all — that's just
+* The host-side `8080` doesn't have to match `APP_PORT` at all—that's just
   which port *you* pick to reach it from outside. You could just as easily
   make that side a variable too if you want full control over both ends, but
   it isn't required the way the right-hand side is.
@@ -74,7 +83,7 @@ easy to get backwards:
 This is intentionally a minimal, standalone compose file for deployment. It
 is not the same `docker-compose.yml` used inside the project repo for local
 development (that one spins up separate dev/test databases and an Adminer
-instance for people actively writing code against the project — see
+instance for people actively writing code against the project—see
 [DEVELOPERS.md](./DEVELOPERS.md) if that's what you're trying to do
 instead).
 
@@ -83,9 +92,9 @@ instead).
 In the same directory:
 
 ```env
-DB_USER=charity_user
+DB_USER=obligo_user
 DB_PASS=super_secure_db_password
-DEV_NAME=charity_db
+DEV_NAME=obligo_db
 
 APP_PORT=1234
 APP_URL=http://localhost:8080
@@ -113,6 +122,8 @@ Notes on each value:
   openssl rand -base64 64
   ```
 
+* If you wish, you can just copy from the `.env.example`
+
 ## Launching it
 
 From the directory containing your `docker-compose.yml` and `.env`:
@@ -123,7 +134,7 @@ docker compose up -d
 
 Docker will pull the app image and the Postgres image, start both
 containers, and the app will automatically run its database migrations on
-first startup — there's no separate migration step to run yourself.
+first startup—there's no separate migration step to run yourself.
 
 ## Accessing the app
 
