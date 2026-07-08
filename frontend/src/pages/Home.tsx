@@ -40,11 +40,6 @@ function Home() {
 
       {/* Hero Section */}
       <main className="container mx-auto px-6 pt-20 pb-32 flex flex-col items-center text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-sm text-indigo-300 mb-8">
-          <span className="flex h-2 w-2 rounded-full bg-indigo-500"></span>
-          Now available in Beta
-        </div>
-
         <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight max-w-4xl leading-tight">
           Track your giving with <br className="hidden md:block" />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
@@ -54,8 +49,8 @@ function Home() {
 
         <p className="mt-8 text-lg md:text-xl text-slate-400 max-w-2xl">
           Obligo simplifies your charitable contributions. Automatically
-          calculate your tithes, track your donation history, and manage your
-          financial commitments securely.
+          calculate your obligations, track your donation history, and manage
+          your financial commitments securely.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -95,7 +90,7 @@ function Home() {
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-white">
-              Everything you need to manage your Maaser
+              Everything you need to manage your giving goals
             </h2>
           </div>
 
@@ -122,7 +117,7 @@ function Home() {
               </h3>
               <p className="text-slate-400 leading-relaxed">
                 Instantly calculate your 10% or 20% obligations based on your
-                income, automatically adjusting for allowable deductions.
+                recorded income.
               </p>
             </div>
 
@@ -147,8 +142,9 @@ function Home() {
                 Donation Tracking
               </h3>
               <p className="text-slate-400 leading-relaxed">
-                Keep a detailed ledger of all your charitable giving. Easily
-                categorize donations and see your running balance at a glance.
+                Keep a detailed ledger of all your charitable giving. Easily add
+                descriptions to your entries and see your running balance at a
+                glance.
               </p>
             </div>
 
@@ -173,8 +169,9 @@ function Home() {
                 Secure & Private
               </h3>
               <p className="text-slate-400 leading-relaxed">
-                Your financial data is yours. We use modern encryption standards
-                to ensure your income and giving history remain totally private.
+                Your financial data is yours. Because Obligo is self-hosted,
+                your income and giving history remain entirely on your own
+                infrastructure.
               </p>
             </div>
           </div>
