@@ -26,15 +26,19 @@ export default function Ledger() {
   const itemsPerPage = 8;
   const showToast = useToast();
   const { checkAuth } = useAuth();
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // New state for the Delete Confirmation Modal
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editingEntry = entries.find((e) => e.transaction_id === editingId);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  const amountInputRef = useRef<HTMLInputElement>(null);
+
+  // State for the Delete Confirmation Modal
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
-  // Step 1: Check session storage before deleting
   const initiateDelete = (id: string) => {
     const skipWarning = sessionStorage.getItem("skipDeleteWarning") === "true";
     if (skipWarning) {
@@ -45,7 +49,6 @@ export default function Ledger() {
     }
   };
 
-  // Step 2: Handle confirmation from the modal
   const confirmDelete = () => {
     if (dontShowAgain) {
       sessionStorage.setItem("skipDeleteWarning", "true");
@@ -55,22 +58,22 @@ export default function Ledger() {
     }
   };
 
-  // Step 3: Handle cancellation
   const cancelDelete = () => {
     setDeleteModalOpen(false);
     setEntryToDelete(null);
-    setDontShowAgain(false); // Reset the checkbox state
+    setDontShowAgain(false);
   };
 
-  // Step 4: The actual deletion logic (renamed from handleDelete)
   const executeDelete = async (id: string) => {
     try {
       const res = await api.deleteEntry(id);
       if (res.ok) {
         showToast("Transaction deleted.", "success");
-        await fetchEntries(); // Refresh data
-        await checkAuth(true); // Sync global dashboard numbers
+        await fetchEntries();
+        await checkAuth(true);
         window.dispatchEvent(new Event("ledger-updated"));
+
+        if (editingId === id) resetForm();
       } else {
         showToast("Failed to delete.", "error");
       }
@@ -78,7 +81,6 @@ export default function Ledger() {
       if (err.message === "Unauthorized") return;
       showToast("Network error.", "error");
     } finally {
-      // Always ensure the modal closes and state resets
       setDeleteModalOpen(false);
       setEntryToDelete(null);
     }
@@ -91,7 +93,11 @@ export default function Ledger() {
     setOriginalAmount(entry.amount);
     setOriginalDescription(entry.description);
     setType(entry.ledger_entry);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      amountInputRef.current?.focus();
+    }, 50);
   };
 
   const resetForm = () => {
@@ -189,8 +195,13 @@ export default function Ledger() {
           editingId ? "Entry updated!" : "Entry added successfully!",
           "success",
         );
+
+        // This is the fix! We only go to page 1 if it's a new entry.
+        if (!editingId) {
+          setCurrentPage(1);
+        }
+
         resetForm();
-        setCurrentPage(1);
         await fetchEntries();
         await checkAuth(true);
         window.dispatchEvent(new Event("ledger-updated"));
@@ -209,16 +220,30 @@ export default function Ledger() {
     <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
         {/* LEFT COLUMN: Add Entry Form */}
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm h-fit">
+        <div
+          ref={formRef}
+          className={`border p-6 rounded-xl shadow-sm h-fit transition-all duration-300 ${
+            editingId
+              ? "bg-slate-900 border-amber-500/50 shadow-lg shadow-amber-900/10 ring-1 ring-amber-500/20"
+              : "bg-slate-900 border-slate-800"
+          }`}
+        >
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               {editingId ? "Edit Transaction" : "Log New Transaction"}
+              {/* Badge showing date of edited entry */}
+              {editingEntry && (
+                <span className="text-[11px] font-medium px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-md flex items-center border border-amber-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-pulse"></span>
+                  {new Date(editingEntry.transaction_date).toLocaleDateString()}
+                </span>
+              )}
             </h2>
             {editingId && (
               <button
                 type="button"
                 onClick={resetForm}
-                className="text-sm text-slate-400 hover:text-white"
+                className="text-sm text-slate-400 hover:text-white transition-colors"
               >
                 Cancel
               </button>
@@ -235,7 +260,7 @@ export default function Ledger() {
                   type === "paycheck"
                     ? "bg-emerald-600 text-white"
                     : "text-slate-400 hover:text-white"
-                }`}
+                } disabled:opacity-60 disabled:cursor-not-allowed`}
               >
                 Paycheck
               </button>
@@ -247,7 +272,7 @@ export default function Ledger() {
                   type === "donation"
                     ? "bg-indigo-600 text-white"
                     : "text-slate-400 hover:text-white"
-                }`}
+                } disabled:opacity-60 disabled:cursor-not-allowed`}
               >
                 Donation
               </button>
@@ -258,12 +283,13 @@ export default function Ledger() {
                 Amount ($)
               </label>
               <input
+                ref={amountInputRef}
                 type="number"
                 step="0.01"
                 required
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow"
                 placeholder="0.00"
               />
             </div>
@@ -276,7 +302,7 @@ export default function Ledger() {
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow"
                 placeholder="e.g., May Salary, Shul Donation"
               />
             </div>
@@ -293,7 +319,7 @@ export default function Ledger() {
               {isSubmitting
                 ? "Saving..."
                 : editingId
-                  ? "Update Entry"
+                  ? "Save Changes"
                   : "Save Entry"}
             </button>
           </form>
@@ -355,9 +381,13 @@ export default function Ledger() {
                       .map((entry) => (
                         <tr
                           key={entry.transaction_id}
-                          className="group text-slate-300 hover:bg-slate-800/20 transition-colors"
+                          className={`group transition-colors ${
+                            editingId === entry.transaction_id
+                              ? "bg-slate-800/80 text-white"
+                              : "text-slate-300 hover:bg-slate-800/20"
+                          }`}
                         >
-                          <td className="py-4">
+                          <td className="py-4 pl-2">
                             {new Date(
                               entry.transaction_date,
                             ).toLocaleDateString()}
@@ -377,63 +407,72 @@ export default function Ledger() {
                                   : "Donation")}
                             </span>
                           </td>
-                          <td className="py-4 text-right flex items-center justify-end gap-4">
+                          <td className="py-4 pr-2 text-right flex items-center justify-end gap-4 min-w-[140px]">
                             <span
                               className={
                                 entry.ledger_entry === "paycheck"
-                                  ? "text-emerald-400"
-                                  : "text-indigo-400"
+                                  ? "text-emerald-400 font-medium"
+                                  : "text-indigo-400 font-medium"
                               }
                             >
                               {entry.ledger_entry === "paycheck" ? "+" : "-"}
                               {formatCurrency(entry.amount)}
                             </span>
 
-                            {/* Edit Icon */}
-                            <button
-                              onClick={() => handleEditClick(entry)}
-                              className="text-slate-600 hover:text-amber-500 transition-opacity opacity-0 group-hover:opacity-100"
-                              title="Edit Entry"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                />
-                              </svg>
-                            </button>
+                            {/* Render explicit "EDITING" badge or the standard action buttons */}
+                            {editingId === entry.transaction_id ? (
+                              <span className="text-[10px] font-bold text-amber-500 tracking-widest bg-amber-500/10 px-2 py-1 rounded">
+                                EDITING
+                              </span>
+                            ) : (
+                              <>
+                                {/* Edit Icon */}
+                                <button
+                                  onClick={() => handleEditClick(entry)}
+                                  className="text-slate-600 hover:text-amber-500 transition-opacity opacity-0 group-hover:opacity-100"
+                                  title="Edit Entry"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                    />
+                                  </svg>
+                                </button>
 
-                            {/* Trash Can Icon - Updated to use initiateDelete */}
-                            <button
-                              onClick={() =>
-                                initiateDelete(entry.transaction_id)
-                              }
-                              className={`text-slate-600 hover:text-red-500 transition-opacity opacity-0 group-hover:opacity-100`}
-                              title="Delete Transaction"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                              </svg>
-                            </button>
+                                {/* Trash Can Icon */}
+                                <button
+                                  onClick={() =>
+                                    initiateDelete(entry.transaction_id)
+                                  }
+                                  className="text-slate-600 hover:text-red-500 transition-opacity opacity-0 group-hover:opacity-100"
+                                  title="Delete Transaction"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                    />
+                                  </svg>
+                                </button>
+                              </>
+                            )}
                           </td>
                         </tr>
                       ))}
