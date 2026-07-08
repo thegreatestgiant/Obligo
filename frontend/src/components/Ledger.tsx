@@ -29,12 +29,45 @@ export default function Ledger() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDelete = async (id: string) => {
+  // New state for the Delete Confirmation Modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+
+  // Step 1: Check session storage before deleting
+  const initiateDelete = (id: string) => {
+    const skipWarning = sessionStorage.getItem("skipDeleteWarning") === "true";
+    if (skipWarning) {
+      executeDelete(id);
+    } else {
+      setEntryToDelete(id);
+      setDeleteModalOpen(true);
+    }
+  };
+
+  // Step 2: Handle confirmation from the modal
+  const confirmDelete = () => {
+    if (dontShowAgain) {
+      sessionStorage.setItem("skipDeleteWarning", "true");
+    }
+    if (entryToDelete) {
+      executeDelete(entryToDelete);
+    }
+  };
+
+  // Step 3: Handle cancellation
+  const cancelDelete = () => {
+    setDeleteModalOpen(false);
+    setEntryToDelete(null);
+    setDontShowAgain(false); // Reset the checkbox state
+  };
+
+  // Step 4: The actual deletion logic (renamed from handleDelete)
+  const executeDelete = async (id: string) => {
     try {
       const res = await api.deleteEntry(id);
       if (res.ok) {
         showToast("Transaction deleted.", "success");
-        // setCurrentPage(1);
         await fetchEntries(); // Refresh data
         await checkAuth(true); // Sync global dashboard numbers
         window.dispatchEvent(new Event("ledger-updated"));
@@ -44,8 +77,13 @@ export default function Ledger() {
     } catch (err: any) {
       if (err.message === "Unauthorized") return;
       showToast("Network error.", "error");
+    } finally {
+      // Always ensure the modal closes and state resets
+      setDeleteModalOpen(false);
+      setEntryToDelete(null);
     }
   };
+
   const handleEditClick = (entry: Entry) => {
     setEditingId(entry.transaction_id);
     setAmount(entry.amount.toString());
@@ -103,7 +141,6 @@ export default function Ledger() {
     }
   };
 
-  // Fetch past entries
   const fetchEntries = async () => {
     const res = await api.getEntries();
     if (res.ok) {
@@ -169,267 +206,316 @@ export default function Ledger() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-      {/* LEFT COLUMN: Add Entry Form */}
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm h-fit">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-white">
-            {editingId ? "Edit Transaction" : "Log New Transaction"}
-          </h2>
-          {editingId && (
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+        {/* LEFT COLUMN: Add Entry Form */}
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm h-fit">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-white">
+              {editingId ? "Edit Transaction" : "Log New Transaction"}
+            </h2>
+            {editingId && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="text-sm text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Type Toggle */}
+            <div className="flex rounded-lg bg-slate-950 p-1 border border-slate-800">
+              <button
+                type="button"
+                disabled={!!editingId}
+                onClick={() => setType("paycheck")}
+                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                  type === "paycheck"
+                    ? "bg-emerald-600 text-white"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Paycheck
+              </button>
+              <button
+                type="button"
+                disabled={!!editingId}
+                onClick={() => setType("donation")}
+                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                  type === "donation"
+                    ? "bg-indigo-600 text-white"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Donation
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-1">
+                Amount ($)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                required
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="0.00"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-1">
+                Description (Optional)
+              </label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="e.g., May Salary, Shul Donation"
+              />
+            </div>
+
             <button
-              type="button"
-              onClick={resetForm}
-              className="text-sm text-slate-400 hover:text-white"
+              type="submit"
+              disabled={isSubmitting}
+              className={`w-full font-bold py-2.5 rounded-lg transition-colors disabled:opacity-50 text-white ${
+                editingId
+                  ? "bg-amber-600 hover:bg-amber-500"
+                  : "bg-indigo-600 hover:bg-indigo-500"
+              }`}
             >
-              Cancel
+              {isSubmitting
+                ? "Saving..."
+                : editingId
+                  ? "Update Entry"
+                  : "Save Entry"}
             </button>
+          </form>
+        </div>
+
+        {/* RIGHT COLUMN: Recent History (Paginated) */}
+        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+            <h2 className="text-lg font-semibold text-white">Recent History</h2>
+
+            <div className="flex items-center gap-3">
+              <input
+                type="file"
+                accept=".csv"
+                ref={fileInputRef}
+                onChange={handleImport}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md transition-colors"
+              >
+                Import CSV
+              </button>
+              <button
+                onClick={handleExport}
+                className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md transition-colors"
+              >
+                Export CSV
+              </button>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest border-l border-slate-700 pl-3">
+                Page {currentPage} /{" "}
+                {Math.max(1, Math.ceil(entries.length / itemsPerPage))}
+              </span>
+            </div>
+          </div>
+
+          {entries.length === 0 ? (
+            <div className="text-center py-10 text-slate-500">
+              No entries found. Log a paycheck or donation to get started!
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto min-h-[400px]">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-400">
+                      <th className="pb-3 font-medium">Date</th>
+                      <th className="pb-3 font-medium">Description</th>
+                      <th className="pb-3 font-medium text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/50">
+                    {entries
+                      .slice(
+                        (currentPage - 1) * itemsPerPage,
+                        currentPage * itemsPerPage,
+                      )
+                      .map((entry) => (
+                        <tr
+                          key={entry.transaction_id}
+                          className="group text-slate-300 hover:bg-slate-800/20 transition-colors"
+                        >
+                          <td className="py-4">
+                            {new Date(
+                              entry.transaction_date,
+                            ).toLocaleDateString()}
+                          </td>
+                          <td className="py-4">
+                            <span className="flex items-center gap-2">
+                              <span
+                                className={`w-2 h-2 rounded-full ${
+                                  entry.ledger_entry === "paycheck"
+                                    ? "bg-emerald-500"
+                                    : "bg-indigo-500"
+                                }`}
+                              ></span>
+                              {entry.description ||
+                                (entry.ledger_entry === "paycheck"
+                                  ? "Income"
+                                  : "Donation")}
+                            </span>
+                          </td>
+                          <td className="py-4 text-right flex items-center justify-end gap-4">
+                            <span
+                              className={
+                                entry.ledger_entry === "paycheck"
+                                  ? "text-emerald-400"
+                                  : "text-indigo-400"
+                              }
+                            >
+                              {entry.ledger_entry === "paycheck" ? "+" : "-"}
+                              {formatCurrency(entry.amount)}
+                            </span>
+
+                            {/* Edit Icon */}
+                            <button
+                              onClick={() => handleEditClick(entry)}
+                              className="text-slate-600 hover:text-amber-500 transition-opacity opacity-0 group-hover:opacity-100"
+                              title="Edit Entry"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
+                              </svg>
+                            </button>
+
+                            {/* Trash Can Icon - Updated to use initiateDelete */}
+                            <button
+                              onClick={() =>
+                                initiateDelete(entry.transaction_id)
+                              }
+                              className={`text-slate-600 hover:text-red-500 transition-opacity opacity-0 group-hover:opacity-100`}
+                              title="Delete Transaction"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-800">
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-all disabled:opacity-30"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) =>
+                      Math.min(
+                        prev + 1,
+                        Math.ceil(entries.length / itemsPerPage),
+                      ),
+                    )
+                  }
+                  disabled={
+                    currentPage >= Math.ceil(entries.length / itemsPerPage)
+                  }
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-all disabled:opacity-30"
+                >
+                  Next
+                </button>
+              </div>
+            </>
           )}
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Type Toggle */}
-          <div className="flex rounded-lg bg-slate-950 p-1 border border-slate-800">
-            <button
-              type="button"
-              disabled={!!editingId}
-              onClick={() => setType("paycheck")}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                type === "paycheck"
-                  ? "bg-emerald-600 text-white"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Paycheck
-            </button>
-            <button
-              type="button"
-              disabled={!!editingId}
-              onClick={() => setType("donation")}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                type === "donation"
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Donation
-            </button>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-1">
-              Amount ($)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              required
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-              placeholder="0.00"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-1">
-              Description (Optional)
-            </label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-              placeholder="e.g., May Salary, Shul Donation"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`w-full font-bold py-2.5 rounded-lg transition-colors disabled:opacity-50 text-white ${
-              editingId
-                ? "bg-amber-600 hover:bg-amber-500"
-                : "bg-indigo-600 hover:bg-indigo-500"
-            }`}
-          >
-            {isSubmitting
-              ? "Saving..."
-              : editingId
-                ? "Update Entry"
-                : "Save Entry"}
-          </button>
-        </form>
       </div>
 
-      {/* RIGHT COLUMN: Recent History (Paginated) */}
-      <div className="lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-          <h2 className="text-lg font-semibold text-white">Recent History</h2>
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-2">
+              Delete Transaction?
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Warning: Deleting and recreating an entry changes its historical
+              date to today, which may alter past monthly summaries and
+              recalculate owed amounts using your current donation percentage.
+            </p>
 
-          <div className="flex items-center gap-3">
-            <input
-              type="file"
-              accept=".csv"
-              ref={fileInputRef}
-              onChange={handleImport}
-              className="hidden"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md transition-colors"
-            >
-              Import CSV
-            </button>
-            <button
-              onClick={handleExport}
-              className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md transition-colors"
-            >
-              Export CSV
-            </button>
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest border-l border-slate-700 pl-3">
-              Page {currentPage} /{" "}
-              {Math.max(1, Math.ceil(entries.length / itemsPerPage))}
-            </span>
+            <label className="flex items-center gap-2 mb-6 cursor-pointer group">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-red-500 focus:ring-red-500 focus:ring-offset-slate-900"
+                checked={dontShowAgain}
+                onChange={(e) => setDontShowAgain(e.target.checked)}
+              />
+              <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
+                Don't show me this warning again this session
+              </span>
+            </label>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-500 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
-
-        {entries.length === 0 ? (
-          <div className="text-center py-10 text-slate-500">
-            No entries found. Log a paycheck or donation to get started!
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto min-h-[400px]">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400">
-                    <th className="pb-3 font-medium">Date</th>
-                    <th className="pb-3 font-medium">Description</th>
-                    <th className="pb-3 font-medium text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/50">
-                  {entries
-                    .slice(
-                      (currentPage - 1) * itemsPerPage,
-                      currentPage * itemsPerPage,
-                    )
-                    .map((entry) => (
-                      <tr
-                        key={entry.transaction_id}
-                        className="group text-slate-300 hover:bg-slate-800/20 transition-colors"
-                      >
-                        <td className="py-4">
-                          {new Date(
-                            entry.transaction_date,
-                          ).toLocaleDateString()}
-                        </td>
-                        <td className="py-4">
-                          <span className="flex items-center gap-2">
-                            <span
-                              className={`w-2 h-2 rounded-full ${
-                                entry.ledger_entry === "paycheck"
-                                  ? "bg-emerald-500"
-                                  : "bg-indigo-500"
-                              }`}
-                            ></span>
-                            {entry.description ||
-                              (entry.ledger_entry === "paycheck"
-                                ? "Income"
-                                : "Donation")}
-                          </span>
-                        </td>
-                        <td className="py-4 text-right flex items-center justify-end gap-4">
-                          <span
-                            className={
-                              entry.ledger_entry === "paycheck"
-                                ? "text-emerald-400"
-                                : "text-indigo-400"
-                            }
-                          >
-                            {entry.ledger_entry === "paycheck" ? "+" : "-"}
-                            {formatCurrency(entry.amount)}
-                          </span>
-
-                          {/* Edit Icon */}
-                          <button
-                            onClick={() => handleEditClick(entry)}
-                            className="text-slate-600 hover:text-amber-500 transition-opacity opacity-0 group-hover:opacity-100"
-                            title="Edit Entry"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                            </svg>
-                          </button>
-
-                          {/* Trash Can Icon */}
-                          <button
-                            onClick={() => handleDelete(entry.transaction_id)}
-                            className={`text-slate-600 hover:text-red-500 transition-opacity opacity-0 group-hover:opacity-100`}
-                            title="Warning: Deleting and recreating an entry changes its historical date to today, which may alter past monthly summaries and recalculate owed amounts using your current donation percentage."
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination Controls */}
-            <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-800">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-all disabled:opacity-30"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) =>
-                    Math.min(
-                      prev + 1,
-                      Math.ceil(entries.length / itemsPerPage),
-                    ),
-                  )
-                }
-                disabled={
-                  currentPage >= Math.ceil(entries.length / itemsPerPage)
-                }
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-all disabled:opacity-30"
-              >
-                Next
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+      )}
+    </>
   );
 }
