@@ -13,12 +13,14 @@ downF:
 logs:
 	docker compose logs -f
 
-test: 
-	go test -v ./backend/...
+init-test-db:
+	@docker compose exec db psql -U $(DB_USER) -d $(DEV_NAME) -tc \
+		"SELECT 1 FROM pg_database WHERE datname = '$(TEST_NAME)'" | grep -q 1 \
+		|| docker compose exec db psql -U $(DB_USER) -d $(DEV_NAME) -c \
+		"CREATE DATABASE $(TEST_NAME);"
 
-reset-test: 
-	docker compose rm -s -fv db-test
-	docker compose up -d db-test
+test: init-test-db
+	go test -v ./backend/...
 
 run:
 	go run -C backend .
@@ -28,16 +30,19 @@ migrate-dev:
 		echo "Error: FILE is not set. Usage: make migrate-dev FILE=filename.sql"; \
 		exit 1; \
 	fi
-	psql $(DB_DEV_URL) -f backend/schema/$(FILE)
+	psql $(DB_URL) -f backend/schema/$(FILE)
 
 db-wipe-dev:
-	psql $(DB_DEV_URL) -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+	psql $(DB_URL) -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
 db-setup-dev: db-wipe-dev
-	psql $(DB_DEV_URL) -f backend/schema/000_official_look.sql
+	psql $(DB_URL) -f backend/schema/000_official_look.sql
 
 docker-build:
 	docker buildx build --load -t obligo-app .
 
 docker-run:
 	docker compose -f created-compose.yml up
+
+docker-down:
+	docker compose -f created-compose.yml down

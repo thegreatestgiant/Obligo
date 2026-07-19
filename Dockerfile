@@ -12,16 +12,13 @@ WORKDIR /app
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ ./
-COPY --from=frontend-builder /app/dist ./dist
 RUN CGO_ENABLED=0 GOOS=linux go build -o obligo main.go
 
 # --- STAGE 3: Final Tiny Runtime ---
-FROM alpine:latest
+FROM scratch AS product
 WORKDIR /app
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+COPY --from=frontend-builder /app/dist ./dist
 COPY --from=backend-builder /app/obligo .
-COPY --from=backend-builder /app/dist ./dist
-RUN chown -R appuser:appgroup /app
 
 EXPOSE 1234
 ENV DIST_PATH=/app/dist

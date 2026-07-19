@@ -81,8 +81,15 @@ func TestVerifyerRejectsTamperedToken(t *testing.T) {
 		t.Fatalf("MakeJWT failed: %v", err)
 	}
 
-	// Flip the last character to simulate tampering
-	tampered := token[:len(token)-1] + "X"
+	// Flip a character in the middle of the payload to reliably
+	// invalidate the signature. Changing the last base64url character
+	// can be a no-op due to padding alignment, making this test flaky.
+	mid := len(token) / 2
+	flipChar := byte('A')
+	if token[mid] == 'A' {
+		flipChar = 'B'
+	}
+	tampered := token[:mid] + string(flipChar) + token[mid+1:]
 
 	_, err = Verifyer(tampered, testSecret)
 	if err == nil {
