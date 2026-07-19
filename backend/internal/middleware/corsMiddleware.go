@@ -1,19 +1,21 @@
 package middleware
 
-import "net/http"
-
+import (
+	"net/http"
+	"os"
+)
 func CorsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 
-		if origin != "" {
+		allowedOrigin := os.Getenv("FRONTEND_URL")
+
+		if origin == allowedOrigin || origin == "http://localhost:5173" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
 		} else {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 		}
-
-		// 2. Explicitly allow cookies/credentials
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 		// 3. Allow standard methods and headers (like Content-Type for JSON)
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PATCH, PUT, DELETE")

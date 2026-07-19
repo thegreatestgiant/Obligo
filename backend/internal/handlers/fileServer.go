@@ -14,7 +14,7 @@ import (
 func (cfg *App) StartFileServer(mux *http.ServeMux) {
 	distPath := os.Getenv("DIST_PATH")
 	if distPath == "" {
-		distPath = "../dist" // Default for your local dev setup
+		distPath = "../frontend/dist" // Default for your local dev setup
 	}
 
 	fs := http.FileServer(http.Dir(distPath))

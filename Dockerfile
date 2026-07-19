@@ -17,7 +17,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o obligo main.go
 # --- STAGE 3: Final Tiny Runtime ---
 FROM scratch AS product
 WORKDIR /app
-COPY --from=frontend-builder /app/dist ./dist
+COPY --from=frontend-builder /app/frontend/dist ./dist
 COPY --from=backend-builder /app/obligo .
 
 EXPOSE 1234
