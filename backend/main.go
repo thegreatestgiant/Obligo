@@ -21,6 +21,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 
 	log.Println("Running migrations...")
 	if err := DB.RunMigrations(db); err != nil {
