@@ -76,11 +76,15 @@ func (cfg *App) generateTokensWithCookies(w http.ResponseWriter, uuid uuid.UUID)
 		Name:     "session_id",
 		Value:    token,
 		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 	}
 	refreshCookie := &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
 		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 		Path:     "/refresh",
 	}
 
