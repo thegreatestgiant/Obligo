@@ -1,5 +1,5 @@
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
-  const baseUrl = (window as any).API_URL || "";
+  const baseUrl = (window as any).API_URL || import.meta.env.VITE_API_URL || "";
 
   const response = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
@@ -69,7 +69,8 @@ export const api = {
     const formData = new FormData();
     formData.append("file", file);
 
-    const baseUrl = (window as any).API_URL || "";
+    const baseUrl =
+      (window as any).API_URL || import.meta.env.VITE_API_URL || "";
     const response = await fetch(`${baseUrl}/entries/import`, {
       method: "POST",
       body: formData,
