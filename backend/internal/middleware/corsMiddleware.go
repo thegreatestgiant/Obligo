@@ -3,14 +3,27 @@ package middleware
 import (
 	"net/http"
 	"os"
+	"strings"
 )
 func CorsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 
-		allowedOrigin := os.Getenv("FRONTEND_URL")
+		frontendURLs := os.Getenv("FRONTEND_URL")
 
-		if origin == allowedOrigin || origin == "http://localhost:5173" {
+		allowed := false
+		if origin == "http://localhost:5173" {
+			allowed = true
+		} else if frontendURLs != "" {
+			for _, url := range strings.Split(frontendURLs, ",") {
+				if origin == strings.TrimSpace(url) {
+					allowed = true
+					break
+				}
+			}
+		}
+
+		if allowed {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 		} else {
