@@ -48,9 +48,9 @@ function Home() {
         </h1>
 
         <p className="mt-8 text-lg md:text-xl text-slate-400 max-w-2xl">
-          Obligo simplifies your charitable contributions. Automatically
-          calculate your obligations, track your donation history, and manage
-          your financial commitments securely.
+          Obligo simplifies your maaser and charitable contributions. Automatically
+          calculate your giving obligations, track your donation history, and manage
+          your financial commitments with complete privacy and security—with the option to self-host.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -116,7 +116,7 @@ function Home() {
                 Smart Calculations
               </h3>
               <p className="text-slate-400 leading-relaxed">
-                Instantly calculate your 10% or 20% obligations based on your
+                Instantly calculate your maaser (10% or 20%) obligations based on your
                 recorded income.
               </p>
             </div>
@@ -169,9 +169,9 @@ function Home() {
                 Secure & Private
               </h3>
               <p className="text-slate-400 leading-relaxed">
-                Your financial data is yours. Because Obligo is self-hosted,
-                your income and giving history remain entirely on your own
-                infrastructure.
+                Your financial data is yours. Use our secure cloud platform with confidence,
+                or choose to self-host Obligo to keep your income and giving history entirely
+                on your own infrastructure.
               </p>
             </div>
           </div>
