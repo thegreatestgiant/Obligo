@@ -16,3 +16,10 @@ services:
     restart: always
     ports:
       - 8081:8080
+    volumes:
+      - ./adminer-autologin.php:/var/www/html/index.php
+    environment:
+      ADMINER_SERVER: db
+      ADMINER_USER: ${DB_USER}
+      ADMINER_PASSWORD: ${DB_PASS}
+      ADMINER_DB: ${DEV_NAME}

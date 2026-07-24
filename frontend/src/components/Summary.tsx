@@ -52,12 +52,12 @@ export default function Summary() {
       getMonthly();
     };
 
-    // 3. Start listening for the custom event we created in Ledger.tsx
-    window.addEventListener("ledger-updated", handleLedgerUpdate);
+    // 3. Start listening for the custom event we created in Transactions.tsx
+    window.addEventListener("transactions-updated", handleLedgerUpdate);
 
     // 4. Clean up the listener if the user navigates away from the component
     return () => {
-      window.removeEventListener("ledger-updated", handleLedgerUpdate);
+      window.removeEventListener("transactions-updated", handleLedgerUpdate);
     };
   }, []); // The empty array ensures this listener is only attached once
 

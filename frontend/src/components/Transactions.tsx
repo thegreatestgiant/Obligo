@@ -12,7 +12,7 @@ type Entry = {
   transaction_date: string;
 };
 
-export default function Ledger() {
+export default function Transactions() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<"paycheck" | "donation">("paycheck");
@@ -71,7 +71,7 @@ export default function Ledger() {
         showToast("Transaction deleted.", "success");
         await fetchEntries();
         await checkAuth(true);
-        window.dispatchEvent(new Event("ledger-updated"));
+        window.dispatchEvent(new Event("transactions-updated"));
 
         if (editingId === id) resetForm();
       } else {
@@ -139,7 +139,7 @@ export default function Ledger() {
       );
       await fetchEntries();
       await checkAuth(true);
-      window.dispatchEvent(new Event("ledger-updated"));
+      window.dispatchEvent(new Event("transactions-updated"));
     } catch (err) {
       showToast("Failed to import data. Check file format.", "error");
     } finally {
@@ -215,7 +215,7 @@ export default function Ledger() {
         resetForm();
         await fetchEntries();
         await checkAuth(true);
-        window.dispatchEvent(new Event("ledger-updated"));
+        window.dispatchEvent(new Event("transactions-updated"));
       } else {
         showToast("Failed to save entry.", "error");
       }

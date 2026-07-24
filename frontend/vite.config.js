@@ -10,5 +10,6 @@ export default defineConfig({
     outDir: "dist",
     // Optional: Clear the output directory before each build
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1000,
   },
 });

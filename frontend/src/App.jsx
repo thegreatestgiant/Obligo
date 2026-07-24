@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
+import TransactionsPage from "./pages/TransactionsPage";
 import { AuthProvider } from "./auth/AuthContext";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import Settings from "./pages/Settings";
@@ -23,6 +24,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             {/* Anything inside here REQUIRES a valid cookie */}
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/transactions" element={<TransactionsPage />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>
