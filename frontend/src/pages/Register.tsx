@@ -34,26 +34,28 @@ function Register() {
     }
   };
 
-  const handleSubmit = async (e: { preventDefault: () => void }) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     setIsSubmitting(true);
 
     try {
-      const response = await api.register(
-        formData.email,
-        formData.username,
+      await api.register(
+        formData.email.trim(),
+        formData.username.trim(),
         formData.password,
       );
 
-      if (response.ok) {
-        navigate("/login", { replace: true });
+      navigate("/login", { replace: true });
+    } catch (error: any) {
+      console.error("Registration Error:", error);
+      if (error.message.includes("409")) {
+        setErrors({ submit: "Username or email already exists." });
+      } else if (error.message === "Unauthorized") {
+        setErrors({ submit: "Not authorized to register." });
       } else {
         setErrors({ submit: "Registration failed. Please try again." });
       }
-    } catch (error) {
-      console.error("Network Error:", error);
-      setErrors({ submit: "Cannot connect to the server." });
     } finally {
       setIsSubmitting(false);
     }

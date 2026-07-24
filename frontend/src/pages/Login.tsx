@@ -28,23 +28,24 @@ function Login() {
     }
   };
 
-  const handleSubmit = async (e: { preventDefault: () => void }) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors(INITIAL_ERRORS);
     setIsSubmitting(true);
 
     try {
-      const response = await api.login(formData.username, formData.password);
+      const response = await api.login(formData.username.trim(), formData.password);
 
-      if (response.ok) {
-        await checkAuth();
-        navigate("/dashboard", { replace: true });
-      } else {
+      // fetchAPI throws on error, so if we reach here it was successful
+      await checkAuth();
+      navigate("/dashboard", { replace: true });
+    } catch (error: any) {
+      console.error("Login Error:", error);
+      if (error.message === "Unauthorized") {
         setErrors({ submit: "Invalid username or password." });
+      } else {
+        setErrors({ submit: "Cannot connect to the server." });
       }
-    } catch (error) {
-      console.error("Network Error:", error);
-      setErrors({ submit: "Cannot connect to the server." });
     } finally {
       setIsSubmitting(false);
     }

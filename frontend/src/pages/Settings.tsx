@@ -11,30 +11,25 @@ function Settings() {
 
   const handleUpdatePercent = async () => {
     try {
-      const response = await api.updatePercent(parseFloat(percent));
-
-      if (response.ok) {
-        showToast("Donation percentage updated!", "success"); // Success Toast
-      } else {
-        showToast("Failed to update percentage.", "error"); // Error Toast
-      }
-    } catch (err) {
-      showToast("Server connection error.", "error");
+      await api.updatePercent(parseFloat(percent));
+      showToast("Donation percentage updated!", "success");
+    } catch (err: any) {
+      if (err.message === "Unauthorized") return;
+      showToast("Failed to update percentage.", "error");
     }
   };
 
   const handleChangePassword = async () => {
     try {
-      const response = await api.changePassword(passwords.old, passwords.new);
-
-      if (response.ok) {
-        showToast("Password updated successfully!", "success");
-        setPasswords({ old: "", new: "" });
+      await api.changePassword(passwords.old, passwords.new);
+      showToast("Password updated successfully!", "success");
+      setPasswords({ old: "", new: "" });
+    } catch (err: any) {
+      if (err.message === "Unauthorized") {
+        showToast("Incorrect old password.", "error");
       } else {
         showToast("Failed to update password.", "error");
       }
-    } catch (err) {
-      showToast("Server connection error.", "error");
     }
   };
 
