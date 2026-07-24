@@ -18,7 +18,7 @@ downF: ## Stop docker compose services and remove volumes
 	docker compose down -v
 
 logs: ## Tail docker compose logs
-	docker compose logs -f
+	docker compose logs -f || true
 
 init-test-db: ## Initialize the test database if it doesn't exist
 	@docker compose exec db psql -U $(DB_USER) -d $(DEV_NAME) -tc \
@@ -30,7 +30,7 @@ test: init-test-db ## Run backend tests
 	go test -v ./backend/...
 
 run: ## Run the backend server locally
-	go run -C backend .
+	go run -C backend . || true
 
 migrate-dev: ## Run a specific migration file (e.g. make migrate-dev FILE=filename.sql)
 	@if [ -z "$(FILE)" ]; then \
