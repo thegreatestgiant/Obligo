@@ -16,9 +16,16 @@ func CorsMiddleware(next http.Handler) http.Handler {
 			allowed = true
 		} else if frontendURLs != "" {
 			for _, url := range strings.Split(frontendURLs, ",") {
-				if origin == strings.TrimSpace(url) {
+				url = strings.TrimSpace(url)
+				if origin == url {
 					allowed = true
 					break
+				} else if strings.Contains(url, "*") {
+					prefix, suffix, found := strings.Cut(url, "*")
+					if found && strings.HasPrefix(origin, prefix) && strings.HasSuffix(origin, suffix) {
+						allowed = true
+						break
+					}
 				}
 			}
 		}
