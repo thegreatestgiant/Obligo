@@ -52,8 +52,8 @@ export default function GoalWidget({
               cy={isHalfDonut ? "85%" : "50%"}
               startAngle={isHalfDonut ? 180 : 360}
               endAngle={0}
-              innerRadius={isHalfDonut ? 120 : 90}
-              outerRadius={isHalfDonut ? 165 : 130}
+              innerRadius={isHalfDonut ? "70%" : "60%"}
+              outerRadius={isHalfDonut ? "90%" : "80%"}
               paddingAngle={4}
               dataKey="value"
               stroke="none"

@@ -1,7 +1,7 @@
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const baseUrl = (window as any).API_URL || import.meta.env.VITE_API_URL || "";
 
-  const response = await fetch(`${baseUrl}${endpoint}`, {
+  let response = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -9,6 +9,27 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     },
     credentials: "include", // Ensures our Go cookies are always sent!
   });
+
+  if (response.status === 401 && endpoint !== "/login" && endpoint !== "/refresh" && endpoint !== "/logout") {
+    try {
+      const refreshResponse = await fetch(`${baseUrl}/refresh`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (refreshResponse.ok) {
+        response = await fetch(`${baseUrl}${endpoint}`, {
+          ...options,
+          headers: {
+            "Content-Type": "application/json",
+            ...options.headers,
+          },
+          credentials: "include",
+        });
+      }
+    } catch (err) {
+      console.error("Failed to refresh token", err);
+    }
+  }
 
   if (response.status === 401) {
     // Shout to the React app that the session is dead
@@ -71,11 +92,25 @@ export const api = {
 
     const baseUrl =
       (window as any).API_URL || import.meta.env.VITE_API_URL || "";
-    const response = await fetch(`${baseUrl}/entries/import`, {
+    let response = await fetch(`${baseUrl}/entries/import`, {
       method: "POST",
       body: formData,
       credentials: "include",
     });
+
+    if (response.status === 401) {
+      const refreshResponse = await fetch(`${baseUrl}/refresh`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (refreshResponse.ok) {
+        response = await fetch(`${baseUrl}/entries/import`, {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
+      }
+    }
 
     if (response.status === 401) {
       window.dispatchEvent(new Event("auth-expired"));

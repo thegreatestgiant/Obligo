@@ -379,9 +379,10 @@ export default function Transactions() {
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-800 text-slate-400">
-                      <th className="pb-3 font-medium">Date</th>
-                      <th className="pb-3 font-medium">Description</th>
-                      <th className="pb-3 font-medium text-right">Amount</th>
+                      <th className="pb-3 pl-2 font-medium">Date</th>
+                      <th className="pb-3 px-4 font-medium">Description</th>
+                      <th className="pb-3 px-4 font-medium text-right">Amount</th>
+                      <th className="pb-3 pr-2 font-medium text-right"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/50">
@@ -399,12 +400,12 @@ export default function Transactions() {
                               : "text-slate-300 hover:bg-slate-800/20"
                           }`}
                         >
-                          <td className="py-4 pl-2">
+                          <td className="py-4 pl-2 whitespace-nowrap">
                             {new Date(
                               entry.transaction_date,
                             ).toLocaleDateString()}
                           </td>
-                          <td className="py-4">
+                          <td className="py-4 px-4 min-w-[120px]">
                             <span className="flex items-center gap-2">
                               <span
                                 className={`w-2 h-2 rounded-full ${
@@ -419,7 +420,7 @@ export default function Transactions() {
                                   : "Donation")}
                             </span>
                           </td>
-                          <td className="py-4 pr-2 text-right flex items-center justify-end gap-4 min-w-[140px]">
+                          <td className="py-4 px-4 text-right whitespace-nowrap">
                             <span
                               className={
                                 entry.ledger_entry === "paycheck"
@@ -430,61 +431,64 @@ export default function Transactions() {
                               {entry.ledger_entry === "paycheck" ? "+" : "-"}
                               {formatCurrency(entry.amount)}
                             </span>
-
-                            {/* Render explicit "EDITING" badge or the standard action buttons */}
-                            {editingId === entry.transaction_id ? (
-                              <span className="text-[10px] font-bold text-amber-500 tracking-widest bg-amber-500/10 px-2 py-1 rounded">
-                                EDITING
-                              </span>
-                            ) : (
-                              <>
-                                {/* Edit Icon */}
-                                <button
-                                  onClick={() => handleEditClick(entry)}
-                                  className="text-slate-600 hover:text-amber-500 transition-opacity opacity-0 group-hover:opacity-100"
-                                  title="Edit Entry"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
+                          </td>
+                          <td className="py-4 pr-2 text-right">
+                            <div className="flex items-center justify-end gap-3 min-w-[80px]">
+                              {/* Render explicit "EDITING" badge or the standard action buttons */}
+                              {editingId === entry.transaction_id ? (
+                                <span className="text-[10px] font-bold text-amber-500 tracking-widest bg-amber-500/10 px-2 py-1 rounded">
+                                  EDITING
+                                </span>
+                              ) : (
+                                <>
+                                  {/* Edit Icon */}
+                                  <button
+                                    onClick={() => handleEditClick(entry)}
+                                    className="text-slate-600 hover:text-amber-500 transition-opacity opacity-0 md:opacity-100 group-hover:opacity-100"
+                                    title="Edit Entry"
                                   >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                    />
-                                  </svg>
-                                </button>
-
-                                {/* Trash Can Icon */}
-                                <button
-                                  onClick={() =>
-                                    initiateDelete(entry.transaction_id)
-                                  }
-                                  className="text-slate-600 hover:text-red-500 transition-opacity opacity-0 group-hover:opacity-100"
-                                  title="Delete Transaction"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                      />
+                                    </svg>
+                                  </button>
+  
+                                  {/* Trash Can Icon */}
+                                  <button
+                                    onClick={() =>
+                                      initiateDelete(entry.transaction_id)
+                                    }
+                                    className="text-slate-600 hover:text-red-500 transition-opacity opacity-0 md:opacity-100 group-hover:opacity-100"
+                                    title="Delete Transaction"
                                   >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                    />
-                                  </svg>
-                                </button>
-                              </>
-                            )}
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                      />
+                                    </svg>
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
