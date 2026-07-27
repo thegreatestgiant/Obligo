@@ -382,7 +382,7 @@ export default function Transactions() {
                       <th className="pb-3 pl-2 font-medium">Date</th>
                       <th className="pb-3 px-4 font-medium">Description</th>
                       <th className="pb-3 px-4 font-medium text-right">Amount</th>
-                      <th className="pb-3 pr-2 font-medium text-right"></th>
+                      <th className="pb-3 pl-4 pr-2 font-medium text-right text-slate-500 text-[10px] uppercase tracking-wider">Tools</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/50">
@@ -432,8 +432,8 @@ export default function Transactions() {
                               {formatCurrency(entry.amount)}
                             </span>
                           </td>
-                          <td className="py-4 pr-2 text-right">
-                            <div className="flex items-center justify-end gap-3 min-w-[80px]">
+                          <td className="py-4 pr-2 pl-2 text-right">
+                            <div className="flex items-center justify-end gap-2 min-w-[60px]">
                               {/* Render explicit "EDITING" badge or the standard action buttons */}
                               {editingId === entry.transaction_id ? (
                                 <span className="text-[10px] font-bold text-amber-500 tracking-widest bg-amber-500/10 px-2 py-1 rounded">
@@ -444,7 +444,7 @@ export default function Transactions() {
                                   {/* Edit Icon */}
                                   <button
                                     onClick={() => handleEditClick(entry)}
-                                    className="text-slate-600 hover:text-amber-500 transition-opacity opacity-0 md:opacity-100 group-hover:opacity-100"
+                                    className="text-slate-600 hover:text-amber-500 transition-opacity opacity-100 md:opacity-0 group-hover:opacity-100"
                                     title="Edit Entry"
                                   >
                                     <svg
@@ -468,7 +468,7 @@ export default function Transactions() {
                                     onClick={() =>
                                       initiateDelete(entry.transaction_id)
                                     }
-                                    className="text-slate-600 hover:text-red-500 transition-opacity opacity-0 md:opacity-100 group-hover:opacity-100"
+                                    className="text-slate-600 hover:text-red-500 transition-opacity opacity-100 md:opacity-0 group-hover:opacity-100"
                                     title="Delete Transaction"
                                   >
                                     <svg
