@@ -84,6 +84,7 @@ func (cfg *App) generateTokensWithCookies(w http.ResponseWriter, uuid uuid.UUID)
 		Secure:   true,
 		SameSite: http.SameSiteNoneMode,
 		Path:     "/refresh",
+		Expires:  expires_at,
 	}
 
 	http.SetCookie(w, jwtCookie)
