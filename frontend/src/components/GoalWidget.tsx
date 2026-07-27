@@ -56,7 +56,7 @@ export default function GoalWidget({
             <Pie
               data={pieData}
               cx="50%"
-              cy={isHalfDonut ? "85%" : "50%"}
+              cy={isHalfDonut ? (isMobile ? "75%" : "85%") : "50%"}
               startAngle={isHalfDonut ? 180 : 360}
               endAngle={0}
               innerRadius={isHalfDonut ? (isMobile ? "70%" : 120) : (isMobile ? "60%" : 90)}
@@ -80,7 +80,7 @@ export default function GoalWidget({
           className="absolute left-0 right-0 text-center pointer-events-none transition-all duration-1000 ease-in-out"
           style={{
             transform: isHalfDonut
-              ? "translateY(-100px)"
+              ? (isMobile ? "translateY(-140px)" : "translateY(-100px)")
               : "translateY(-210px)",
             top: "100%",
           }}

@@ -408,7 +408,7 @@ export default function Transactions() {
                           <td className="py-4 px-4 min-w-[120px]">
                             <span className="flex items-center gap-2">
                               <span
-                                className={`w-2 h-2 rounded-full ${
+                                className={`w-2 h-2 rounded-full shrink-0 ${
                                   entry.ledger_entry === "paycheck"
                                     ? "bg-emerald-500"
                                     : "bg-indigo-500"
