@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PieChart, Pie, Tooltip, ResponsiveContainer } from "recharts";
 import { formatCurrency } from "../utils/formatter";
 
@@ -12,6 +12,13 @@ export default function GoalWidget({
   totalDonated,
 }: GoalWidgetProps) {
   const [isHalfDonut, setIsHalfDonut] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const remaining = Math.max(0, totalTarget - totalDonated);
   const percentFulfilled =
@@ -52,8 +59,8 @@ export default function GoalWidget({
               cy={isHalfDonut ? "85%" : "50%"}
               startAngle={isHalfDonut ? 180 : 360}
               endAngle={0}
-              innerRadius={isHalfDonut ? 120 : 90}
-              outerRadius={isHalfDonut ? 165 : 130}
+              innerRadius={isHalfDonut ? (isMobile ? "70%" : 120) : (isMobile ? "60%" : 90)}
+              outerRadius={isHalfDonut ? (isMobile ? "90%" : 165) : (isMobile ? "80%" : 130)}
               paddingAngle={4}
               dataKey="value"
               stroke="none"

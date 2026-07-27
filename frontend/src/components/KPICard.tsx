@@ -37,7 +37,7 @@ export default function KPICard({
       {/* 2. Obligation Laser Base (Perfectly flush) */}
       {intent === "obligation" && percent && (
         <div
-          className="absolute bottom-0 left-0 h-2 bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.8)] z-20 rounded-br-2xl"
+          className="absolute bottom-0 left-0 h-2 bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.8)] z-20"
           style={{ width: `${percent}` }}
         ></div>
       )}
