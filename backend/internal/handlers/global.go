@@ -1,14 +1,15 @@
 package handlers
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/thegreatestgiant/obligo/internal/auth"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type App struct {
@@ -61,13 +62,9 @@ func (cfg *App) generateTokensWithCookies(w http.ResponseWriter, uuid uuid.UUID)
 	refreshToken := auth.MakeRefreshToken()
 	log.Printf("Refresh token: %v ", refreshToken)
 
-	hashedRefreshByte, err := bcrypt.GenerateFromPassword([]byte(refreshToken), bcrypt.DefaultCost)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		log.Printf("Couldn't hash or smtg: %v", err)
-		return
-	}
-	hashedRefresh := string(hashedRefreshByte)
+	hash := sha256.Sum256([]byte(refreshToken))
+	hashedRefresh := hex.EncodeToString(hash[:])
+	
 	expires_at := time.Now().AddDate(0, 0, 60)
 	cfg.addRefresh(hashedRefresh, uuid, expires_at)
 	log.Printf("Added this Hashed refresh: %v", hashedRefresh)

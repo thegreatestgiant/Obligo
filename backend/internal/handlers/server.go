@@ -27,7 +27,7 @@ func StartServer(cfg *App) {
 	mux.HandleFunc("POST /register", cfg.Register)
 	mux.HandleFunc("POST /login", cfg.Login)
 	mux.HandleFunc("POST /logout", cfg.Logout)
-	mux.HandleFunc("POST /refresh", middleware.AuthGuard(http.HandlerFunc(cfg.refresh), cfg.JWT, check))
+	mux.HandleFunc("POST /refresh", middleware.AuthGuardRefresh(http.HandlerFunc(cfg.refresh), cfg.JWT, check))
 	mux.HandleFunc("POST /revoke", middleware.AuthGuard(http.HandlerFunc(cfg.revoke), cfg.JWT, check))
 	mux.HandleFunc("GET /entries/export", middleware.AuthGuard(http.HandlerFunc(cfg.ExportCSV), cfg.JWT, check))
 	mux.HandleFunc("POST /entries/import", middleware.AuthGuard(http.HandlerFunc(cfg.ImportCSV), cfg.JWT, check))

@@ -51,3 +51,46 @@ func AuthGuard(next http.Handler, jwt []byte, check func(jti uuid.UUID) bool) fu
 		next.ServeHTTP(w, r)
 	})
 }
+
+func AuthGuardRefresh(next http.Handler, jwtSecret []byte, check func(jti uuid.UUID) bool) func(http.ResponseWriter, *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("session_id")
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			log.Println("Bad session ID")
+			return
+		}
+
+		claims, err := auth.VerifyerOfExpired(cookie.Value, jwtSecret)
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			log.Printf("Couldn't get claims (refresh): %v", err)
+			return
+		}
+
+		jtiStr := claims.ID
+		jti, err := uuid.Parse(jtiStr)
+		if err != nil {
+			log.Printf("Couldn't get jti uuid: %v", err)
+			return
+		}
+		log.Printf("The jti (refresh): %v ", jti)
+		if check(jti) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			log.Println("You are blacklisted")
+			return
+		}
+
+		uuidStr := claims.Subject
+		userID, err := uuid.Parse(uuidStr)
+		if err != nil {
+			log.Printf("Couldn't get uuid: %v ", err)
+			return
+		}
+
+		r = r.WithContext(context.WithValue(r.Context(), "user_id", userID))
+		r = r.WithContext(context.WithValue(r.Context(), "jti", jti))
+
+		next.ServeHTTP(w, r)
+	})
+}

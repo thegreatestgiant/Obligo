@@ -31,6 +31,23 @@ func Verifyer(tokenString string, secret []byte) (claims *jwt.RegisteredClaims, 
 	return c, nil
 }
 
+func VerifyerOfExpired(tokenString string, secret []byte) (claims *jwt.RegisteredClaims, err error) {
+	c := &jwt.RegisteredClaims{}
+	_, err = jwt.ParseWithClaims(tokenString, c, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return secret, nil
+	})
+
+	if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
+		log.Printf("Cannot Parse Token (fatal): %v", err)
+		return &jwt.RegisteredClaims{}, err
+	}
+
+	return c, nil
+}
+
 func MakeJWT(userID uuid.UUID, tokenSecret []byte, expiresIn time.Duration) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    "Yoily",

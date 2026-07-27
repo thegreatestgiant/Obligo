@@ -237,6 +237,20 @@ func (cfg *App) getRefresh(user_id uuid.UUID) string {
 	return token
 }
 
+func (cfg *App) refreshRevoked(refreshToken string) bool {
+	query := `SELECT 1 FROM refresh_tokens WHERE token=$1 AND revoked_at IS NOT NULL`
+	var exists int
+	err := cfg.queryReturnTemplate(query, []any{&exists}, refreshToken)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			log.Printf("Database error checking revoked token: %v", err)
+		}
+		return false
+	}
+	log.Printf("Token was revoked: %v ", refreshToken)
+	return true
+}
+
 func (cfg *App) getDonationPercent(user_id uuid.UUID) float64 {
 	query := "SELECT donation_percentage FROM users WHERE user_id=$1"
 	percent := 10.0
@@ -375,6 +389,17 @@ func (cfg *App) revokeRefresh(token string) {
 	err := cfg.queryExecTemplate(query, time.Now(), token)
 	if err != nil {
 		log.Printf("Couldn't revoke refresh token: %v", err)
+	}
+}
+
+func (cfg *App) revokeAllRefresh(user_id uuid.UUID) {
+	query := `UPDATE refresh_tokens
+    		  SET updated_at=$1, revoked_at=$1
+    		  WHERE user_id=$2 AND revoked_at IS NULL`
+
+	err := cfg.queryExecTemplate(query, time.Now(), user_id)
+	if err != nil {
+		log.Printf("Couldn't revoke refresh tokens: %v", err)
 	}
 }
 

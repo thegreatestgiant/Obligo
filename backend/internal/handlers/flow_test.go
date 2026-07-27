@@ -21,7 +21,7 @@ func TestUserJourneyEndToEnd(t *testing.T) {
 	mux.HandleFunc("GET /health", testApp.PingDB)
 	mux.HandleFunc("POST /register", testApp.Register)
 	mux.HandleFunc("POST /login", testApp.Login)
-	mux.HandleFunc("POST /refresh", middleware.AuthGuard(http.HandlerFunc(testApp.refresh), testApp.JWT, check))
+	mux.HandleFunc("POST /refresh", middleware.AuthGuardRefresh(http.HandlerFunc(testApp.refresh), testApp.JWT, check))
 	mux.HandleFunc("POST /entries", middleware.AuthGuard(http.HandlerFunc(testApp.setEntry), testApp.JWT, check))
 	mux.HandleFunc("GET /entries", middleware.AuthGuard(http.HandlerFunc(testApp.getEntries), testApp.JWT, check))
 	mux.HandleFunc("GET /entries/{id}", middleware.AuthGuard(http.HandlerFunc(testApp.getAnEntry), testApp.JWT, check))
@@ -229,5 +229,81 @@ func TestUserJourneyEndToEnd(t *testing.T) {
 	rrDel := doReq(http.MethodDelete, "/entries/"+capturedEntryID, nil, []*http.Cookie{sessionCookie})
 	if rrDel.Code != http.StatusOK {
 		t.Fatalf("Failed to delete entry: %d", rrDel.Code)
+	}
+}
+
+func TestHackerRefreshReuse(t *testing.T) {
+	clearDatabase()
+
+	mux := http.NewServeMux()
+	check := testApp.blacklisted
+
+	mux.HandleFunc("POST /register", testApp.Register)
+	mux.HandleFunc("POST /login", testApp.Login)
+	mux.HandleFunc("POST /refresh", middleware.AuthGuardRefresh(http.HandlerFunc(testApp.refresh), testApp.JWT, check))
+
+	doReq := func(path string, body []byte, cookies []*http.Cookie) *httptest.ResponseRecorder {
+		req := httptest.NewRequest("POST", path, bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		for _, c := range cookies {
+			req.AddCookie(c)
+		}
+		rr := httptest.NewRecorder()
+		mux.ServeHTTP(rr, req)
+		return rr
+	}
+
+	getCookie := func(rr *httptest.ResponseRecorder, name string) *http.Cookie {
+		for _, c := range rr.Result().Cookies() {
+			if c.Name == name {
+				return c
+			}
+		}
+		return nil
+	}
+
+	// 1. Register and Login User A
+	userABody := []byte(`{"email": "usera@example.com", "username": "usera", "password": "password"}`)
+	doReq("/register", userABody, nil)
+	rrLoginA := doReq("/login", userABody, nil)
+	sessionA1 := getCookie(rrLoginA, "session_id")
+	refreshA1 := getCookie(rrLoginA, "refresh_token")
+
+	// 2. Register and Login User B
+	userBBody := []byte(`{"email": "userb@example.com", "username": "userb", "password": "password"}`)
+	doReq("/register", userBBody, nil)
+	rrLoginB := doReq("/login", userBBody, nil)
+	sessionB1 := getCookie(rrLoginB, "session_id")
+	refreshB1 := getCookie(rrLoginB, "refresh_token")
+
+	// 3. User A naturally refreshes their token (A1 is revoked, A2 is created)
+	rrRefreshA := doReq("/refresh", nil, []*http.Cookie{sessionA1, refreshA1})
+	if rrRefreshA.Code != http.StatusOK {
+		t.Fatalf("User A failed to refresh normally: %d", rrRefreshA.Code)
+	}
+	sessionA2 := getCookie(rrRefreshA, "session_id")
+	refreshA2 := getCookie(rrRefreshA, "refresh_token")
+
+	// 4. HACKER tries to reuse the old revoked token A1
+	// We simulate the JWT denylist TTL expiring by clearing it. 
+	// This allows the hacker past the AuthGuard so they hit the trap in the handler.
+	testApp.DB.Exec("DELETE FROM denylist")
+	rrHacker := doReq("/refresh", nil, []*http.Cookie{sessionA1, refreshA1})
+	if rrHacker.Code == http.StatusOK {
+		t.Fatalf("Hacker was able to reuse a revoked token!")
+	}
+
+	// 5. User A tries to use their VALID new token (A2)
+	// This should fail because the trap revoked ALL of A's tokens
+	rrTrapA := doReq("/refresh", nil, []*http.Cookie{sessionA2, refreshA2})
+	if rrTrapA.Code == http.StatusOK {
+		t.Fatalf("TRAP FAILED: User A was still able to refresh after the hacker reused their token! The trap didn't revoke all their active tokens.")
+	}
+
+	// 6. User B tries to use their VALID token (B1)
+	// This should SUCCEED, proving the trap only affected User A!
+	rrTrapB := doReq("/refresh", nil, []*http.Cookie{sessionB1, refreshB1})
+	if rrTrapB.Code != http.StatusOK {
+		t.Fatalf("TRAP BUG: User B's tokens were completely revoked even though they did nothing wrong! The query might be wiping the whole table.")
 	}
 }

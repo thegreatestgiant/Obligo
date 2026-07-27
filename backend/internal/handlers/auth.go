@@ -67,7 +67,7 @@ func (cfg *App) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claims, err := auth.Verifyer(cookie.Value, cfg.JWT)
+	claims, err := auth.VerifyerOfExpired(cookie.Value, cfg.JWT)
 	if err != nil {
 		http.Error(w, "Couldn't get claims", http.StatusInternalServerError)
 		log.Printf("Couldn't get claims: %v", err)
