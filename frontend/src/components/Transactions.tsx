@@ -381,8 +381,8 @@ export default function Transactions() {
                     <tr className="border-b border-slate-800 text-slate-400">
                       <th className="pb-3 pl-2 font-medium">Date</th>
                       <th className="pb-3 px-4 font-medium">Description</th>
-                      <th className="pb-3 px-4 font-medium text-right">Amount</th>
-                      <th className="pb-3 pl-4 pr-2 font-medium text-right text-slate-500 text-[10px] uppercase tracking-wider">Tools</th>
+                      <th className="pb-3 pl-4 pr-0 font-medium text-right">Amount</th>
+                      <th className="pb-3 pl-2 pr-2 w-[70px] font-medium text-right text-slate-500 text-[10px] uppercase tracking-wider">Tools</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/50">
@@ -420,7 +420,7 @@ export default function Transactions() {
                                   : "Donation")}
                             </span>
                           </td>
-                          <td className="py-4 px-4 text-right whitespace-nowrap">
+                          <td className="py-4 pl-4 pr-0 text-right whitespace-nowrap">
                             <span
                               className={
                                 entry.ledger_entry === "paycheck"
@@ -432,8 +432,8 @@ export default function Transactions() {
                               {formatCurrency(entry.amount)}
                             </span>
                           </td>
-                          <td className="py-4 pr-2 pl-2 text-right">
-                            <div className="flex items-center justify-end gap-2 min-w-[60px]">
+                          <td className="py-4 pr-2 pl-2 text-right w-[70px]">
+                            <div className="flex items-center justify-end gap-2">
                               {/* Render explicit "EDITING" badge or the standard action buttons */}
                               {editingId === entry.transaction_id ? (
                                 <span className="text-[10px] font-bold text-amber-500 tracking-widest bg-amber-500/10 px-2 py-1 rounded">
