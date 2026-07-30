@@ -40,12 +40,7 @@ func main() {
 		Lifetime: time.Hour * 24,
 	}
 
-	ticker := time.NewTicker(cfg.Lifetime)
-	go func() {
-		for range ticker.C {
-			cfg.Cleanup()
-		}
-	}()
+	go cfg.Cleanup(time.Tick(cfg.Lifetime))
 
 	handlers.StartServer(cfg)
 }
