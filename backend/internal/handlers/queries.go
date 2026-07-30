@@ -168,7 +168,9 @@ func (cfg *App) getUserEntries(user_id uuid.UUID, ch chan Ledger, errCh chan err
 	}
 }
 
-func (cfg *App) getMonthlySummary(user_id uuid.UUID) ([]monthlySummary, error) {
+func (cfg *App) getMonthlySummary(user_id uuid.UUID, ch chan monthlySummary, errCh chan error) {
+	defer close(ch)
+	defer close(errCh)
 	query := `SELECT
   date_trunc('month', transaction_date) AS bucket,
   ledger_entry,
@@ -181,11 +183,11 @@ func (cfg *App) getMonthlySummary(user_id uuid.UUID) ([]monthlySummary, error) {
 
 	rows, err := cfg.queryTemplate(query, user_id)
 	if err != nil {
-		return nil, err
+		errCh <- err
+		return
 	}
+	errCh <- nil
 	defer rows.Close()
-
-	summaries := []monthlySummary{}
 
 	for rows.Next() {
 		var entry monthlySummary
@@ -199,15 +201,13 @@ func (cfg *App) getMonthlySummary(user_id uuid.UUID) ([]monthlySummary, error) {
 			log.Printf("Couldn't scan row: %v", err)
 			continue
 		}
-		summaries = append(summaries, entry)
+		ch <- entry
 	}
 
 	if err = rows.Err(); err != nil {
 		log.Printf("Error iterating rows: %v", err)
-		return nil, err
+		errCh <- err
 	}
-
-	return summaries, nil
 }
 
 func (cfg *App) getPass(user_id uuid.UUID) (string, error) {

@@ -29,8 +29,10 @@ func (cfg *App) summaryMonthly(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	retrieved, err := cfg.getMonthlySummary(user_id)
-	if err != nil {
+	retrieved, errCh := make(chan monthlySummary), make(chan error, 2)
+
+	go cfg.getMonthlySummary(user_id, retrieved, errCh)
+	if err := <-errCh; err != nil {
 		log.Printf("Couldn't get monthly summary: %v", err)
 		http.Error(w, "Failed to get monthly Summary", http.StatusInternalServerError)
 		return
@@ -39,7 +41,7 @@ func (cfg *App) summaryMonthly(w http.ResponseWriter, r *http.Request) {
 	summaries := []monthlySummary{}
 	monthIndices := make(map[string]int)
 
-	for _, entry := range retrieved {
+	for entry := range retrieved {
 		formattedMonth := entry.Month
 		parsedTime, err := time.Parse(time.RFC3339, entry.Month)
 		if err == nil {
