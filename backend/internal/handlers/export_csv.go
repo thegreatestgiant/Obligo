@@ -15,13 +15,14 @@ func (cfg *App) ExportCSV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
 		return
 	}
 
 	ch, errCh := make(chan Ledger), make(chan error)
-	go cfg.getUserEntries(user_id, ch, errCh)
+	go cfg.getUserEntries(ctx, user_id, ch, errCh)
 	if err, ok := <-errCh; ok && err != nil {
 		log.Printf("Failed to get entries: %v", err)
 		http.Error(w, "Failed to fetch entries", http.StatusInternalServerError)

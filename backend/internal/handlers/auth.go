@@ -24,13 +24,14 @@ func (cfg *App) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
 	var body body
 	json.NewDecoder(r.Body).Decode(&body)
 	defer r.Body.Close()
 
 	log.Printf("Here's the body: %v", body)
 
-	if cfg.userExists(body.Email, body.Username) {
+	if cfg.userExists(ctx, body.Email, body.Username) {
 		http.Error(w, "Already exists", http.StatusConflict)
 		log.Println("Username or email already exist")
 		return
@@ -49,7 +50,7 @@ func (cfg *App) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = cfg.setUser(body.Email, body.Username, string(hashedPassword))
+	err = cfg.setUser(ctx, body.Email, body.Username, string(hashedPassword))
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		log.Printf("Couldn't add to db: %v", err)
@@ -61,6 +62,7 @@ func (cfg *App) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *App) Logout(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		http.Error(w, "Unauthorized session", http.StatusUnauthorized)
@@ -81,7 +83,7 @@ func (cfg *App) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refresh := cfg.getRefresh(user_id)
+	refresh := cfg.getRefresh(ctx, user_id)
 
 	jti, err := uuid.Parse(claims.ID)
 	if err != nil {
@@ -90,8 +92,8 @@ func (cfg *App) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg.denyList(jti)
-	cfg.revokeRefresh(refresh)
+	cfg.denyList(ctx, jti)
+	cfg.revokeRefresh(ctx, refresh)
 	log.Println("Revoked Refresh")
 
 	http.SetCookie(w, &http.Cookie{
@@ -124,11 +126,12 @@ func (cfg *App) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
 	var body body
 	json.NewDecoder(r.Body).Decode(&body)
 	defer r.Body.Close()
 
-	user_id, hashedPass := cfg.getUser(body.Username)
+	user_id, hashedPass := cfg.getUser(ctx, body.Username)
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPass), []byte(body.Password))
 	if err != nil {
 		log.Printf("Bad password: %v", err)
@@ -136,7 +139,7 @@ func (cfg *App) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg.generateTokensWithCookies(w, user_id)
+	cfg.generateTokensWithCookies(ctx, w, user_id)
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, `"message": "Login successful"}`)

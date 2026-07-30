@@ -9,7 +9,7 @@ import (
 	"github.com/thegreatestgiant/obligo/internal/auth"
 )
 
-func AuthGuard(next http.Handler, jwt []byte, check func(jti uuid.UUID) bool) func(http.ResponseWriter, *http.Request) {
+func AuthGuard(next http.Handler, jwt []byte, check func(ctx context.Context, jti uuid.UUID) bool) func(http.ResponseWriter, *http.Request) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("session_id")
 		if err != nil {
@@ -32,7 +32,7 @@ func AuthGuard(next http.Handler, jwt []byte, check func(jti uuid.UUID) bool) fu
 			return
 		}
 		log.Printf("The jti: %v ", jti)
-		if check(jti) {
+		if check(r.Context(), jti) {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			log.Println("You are blacklisted")
 			return
@@ -52,7 +52,7 @@ func AuthGuard(next http.Handler, jwt []byte, check func(jti uuid.UUID) bool) fu
 	})
 }
 
-func AuthGuardRefresh(next http.Handler, jwtSecret []byte, check func(jti uuid.UUID) bool) func(http.ResponseWriter, *http.Request) {
+func AuthGuardRefresh(next http.Handler, jwtSecret []byte, check func(ctx context.Context, jti uuid.UUID) bool) func(http.ResponseWriter, *http.Request) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("session_id")
 		if err != nil {
@@ -75,7 +75,7 @@ func AuthGuardRefresh(next http.Handler, jwtSecret []byte, check func(jti uuid.U
 			return
 		}
 		log.Printf("The jti (refresh): %v ", jti)
-		if check(jti) {
+		if check(r.Context(), jti) {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			log.Println("You are blacklisted")
 			return

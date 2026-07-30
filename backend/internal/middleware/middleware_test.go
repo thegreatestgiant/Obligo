@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -98,7 +99,7 @@ func TestAuthGuardBlocksMissingCookie(t *testing.T) {
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	neverBlacklisted := func(jti uuid.UUID) bool { return false }
+	neverBlacklisted := func(ctx context.Context, jti uuid.UUID) bool { return false }
 	handler := AuthGuard(next, testJWTSecret, neverBlacklisted)
 
 	req := httptest.NewRequest(http.MethodGet, "/entries", nil)
@@ -117,7 +118,7 @@ func TestAuthGuardBlocksExpiredToken(t *testing.T) {
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	neverBlacklisted := func(jti uuid.UUID) bool { return false }
+	neverBlacklisted := func(ctx context.Context, jti uuid.UUID) bool { return false }
 	handler := AuthGuard(next, testJWTSecret, neverBlacklisted)
 
 	expiredCookie := makeTestCookie(uuid.New(), -time.Second)
@@ -149,7 +150,7 @@ func TestAuthGuardBlocksBlacklistedToken(t *testing.T) {
 	claims, _ := auth.Verifyer(token, testJWTSecret)
 	jtiToBlock, _ := uuid.Parse(claims.ID)
 
-	alwaysBlacklisted := func(jti uuid.UUID) bool {
+	alwaysBlacklisted := func(ctx context.Context, jti uuid.UUID) bool {
 		return jti == jtiToBlock
 	}
 	handler := AuthGuard(next, testJWTSecret, alwaysBlacklisted)
@@ -173,7 +174,7 @@ func TestAuthGuardPassesValidToken(t *testing.T) {
 		handlerReached = true
 		w.WriteHeader(http.StatusOK)
 	})
-	neverBlacklisted := func(jti uuid.UUID) bool { return false }
+	neverBlacklisted := func(ctx context.Context, jti uuid.UUID) bool { return false }
 	handler := AuthGuard(next, testJWTSecret, neverBlacklisted)
 
 	cookie := makeTestCookie(uuid.New(), time.Hour)

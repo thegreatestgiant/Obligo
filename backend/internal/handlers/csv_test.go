@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"mime/multipart"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/thegreatestgiant/obligo/internal/middleware"
 )
 
@@ -17,8 +19,9 @@ func TestCSVExportAndImport(t *testing.T) {
 
 	// 1. SETUP ROUTER
 	mux := http.NewServeMux()
-	check := testApp.blacklisted
-
+	check := func(ctx context.Context, jti uuid.UUID) bool {
+		return testApp.blacklisted(ctx, jti)
+	}
 	// Setup necessary routes
 	mux.HandleFunc("POST /register", testApp.Register)
 	mux.HandleFunc("POST /login", testApp.Login)

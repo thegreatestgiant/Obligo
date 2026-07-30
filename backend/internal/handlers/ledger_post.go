@@ -15,6 +15,7 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
 		return
@@ -31,7 +32,7 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	percent := float64(cfg.getDonationPercent(user_id))
+	percent := float64(cfg.getDonationPercent(ctx, user_id))
 
 	owed := 0.0
 	fulfilled := 0.0
@@ -40,12 +41,13 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		owed = math.Round(owed*100) / 100
 		log.Printf("Recieved Paycheck, amount owed: %.2f", owed)
 	} else {
-		fulfilled = (entry.Amount / cfg.getAmountOwed(user_id)) * 100
+		fulfilled = (entry.Amount / cfg.getAmountOwed(ctx, user_id)) * 100
 		fulfilled = math.Round(fulfilled*100) / 100
 		log.Printf("Recieved Donation, fulfilled %.2f%%", fulfilled)
 	}
 
 	newID, err := cfg.insertEntry(
+		ctx,
 		user_id,
 		entry.LedgerEntry,
 		entry.Amount,
@@ -57,7 +59,7 @@ func (cfg *App) setEntry(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Couldn't add to db: %v", err)
 	}
 
-	entry, err = cfg.getEntry(fmt.Sprintf("%d", newID), user_id)
+	entry, err = cfg.getEntry(ctx, fmt.Sprintf("%d", newID), user_id)
 	if err != nil {
 		log.Printf("Error fetching entry: %v", err)
 		http.Error(w, "Entry not found", http.StatusNotFound)

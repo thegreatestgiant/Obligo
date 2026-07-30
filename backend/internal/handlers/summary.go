@@ -21,12 +21,13 @@ func (cfg *App) summary(w http.ResponseWriter, r *http.Request) {
 	if !validateRequest(w, r, "GET", false) {
 		return
 	}
+	ctx := r.Context()
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
 		return
 	}
 
-	owed, fulfilled, remaining, donated, earned, percent := cfg.channelAll(user_id)
+	owed, fulfilled, remaining, donated, earned, percent := cfg.channelAll(ctx, user_id)
 
 	summary := summary{
 		TotalOwed:           owed,

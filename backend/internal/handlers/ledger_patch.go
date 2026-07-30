@@ -18,6 +18,7 @@ func (cfg *App) editEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
 	id := r.PathValue("id")
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
@@ -33,7 +34,7 @@ func (cfg *App) editEntry(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	entry, err := cfg.getEntry(id, user_id)
+	entry, err := cfg.getEntry(ctx, id, user_id)
 	if err != nil {
 		log.Printf("Error fetching entry: %v", err)
 		http.Error(w, "Entry not found", http.StatusNotFound)
@@ -43,7 +44,7 @@ func (cfg *App) editEntry(w http.ResponseWriter, r *http.Request) {
 	charity_owed := entry.CharityOwed
 
 	if body.Amount != nil && entry.LedgerEntry == Paycheck {
-		charity_owed = *body.Amount * (cfg.getDonationPercent(user_id) / 100)
+		charity_owed = *body.Amount * (cfg.getDonationPercent(ctx, user_id) / 100)
 	}
 
 	if body.Amount == nil {
@@ -53,9 +54,9 @@ func (cfg *App) editEntry(w http.ResponseWriter, r *http.Request) {
 		body.Description = &entry.Description
 	}
 
-	cfg.updateEntry(*body.Amount, charity_owed, *body.Description, id, user_id)
+	cfg.updateEntry(ctx, *body.Amount, charity_owed, *body.Description, id, user_id)
 
-	entry, err = cfg.getEntry(id, user_id)
+	entry, err = cfg.getEntry(ctx, id, user_id)
 	if err != nil {
 		log.Printf("Error fetching entry: %v", err)
 		http.Error(w, "Entry not found", http.StatusNotFound)

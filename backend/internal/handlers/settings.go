@@ -20,6 +20,7 @@ func (cfg *App) updatePercent(w http.ResponseWriter, r *http.Request) {
 	if !validateRequest(w, r, "PATCH", true) {
 		return
 	}
+	ctx := r.Context()
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
 		return
@@ -29,7 +30,7 @@ func (cfg *App) updatePercent(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&setting)
 	defer r.Body.Close()
 
-	err := cfg.updatePercentQuery(setting.Percent, user_id)
+	err := cfg.updatePercentQuery(ctx, setting.Percent, user_id)
 	if err != nil {
 		http.Error(w, "Not Updated", http.StatusInternalServerError)
 		log.Printf("Couldn't update DB: %v", err)
@@ -38,13 +39,14 @@ func (cfg *App) updatePercent(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/text")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, `"donation_percentage": "%f"}`, setting.Percent)
-	cfg.getDonationPercent(user_id)
+	cfg.getDonationPercent(ctx, user_id)
 }
 
 func (cfg *App) changePassword(w http.ResponseWriter, r *http.Request) {
 	if !validateRequest(w, r, "POST", true) {
 		return
 	}
+	ctx := r.Context()
 	setting := setting{}
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
@@ -54,7 +56,7 @@ func (cfg *App) changePassword(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&setting)
 	defer r.Body.Close()
 
-	pass, err := cfg.getPass(user_id)
+	pass, err := cfg.getPass(ctx, user_id)
 	if err != nil {
 		return
 	}
@@ -71,7 +73,7 @@ func (cfg *App) changePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = cfg.updatePassword(hashedPassword, user_id)
+	err = cfg.updatePassword(ctx, hashedPassword, user_id)
 	if err != nil {
 		http.Error(w, "Not Updated", http.StatusInternalServerError)
 		log.Printf("Couldn't update DB: %v", err)

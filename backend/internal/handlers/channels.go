@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math"
@@ -16,34 +17,34 @@ type channel struct {
 	Val  float64
 }
 
-func (cfg *App) channelAmntOwed(user_id uuid.UUID, ch chan channel) {
-	ch <- channel{Name: "owed", Val: cfg.getAmountOwed(user_id)}
+func (cfg *App) channelAmntOwed(ctx context.Context, user_id uuid.UUID, ch chan channel) {
+	ch <- channel{Name: "owed", Val: cfg.getAmountOwed(ctx, user_id)}
 }
 
-func (cfg *App) channelAmntFulfilled(user_id uuid.UUID, ch chan channel) {
-	ch <- channel{Name: "ful", Val: cfg.getAmountFulfilled(user_id)}
+func (cfg *App) channelAmntFulfilled(ctx context.Context, user_id uuid.UUID, ch chan channel) {
+	ch <- channel{Name: "ful", Val: cfg.getAmountFulfilled(ctx, user_id)}
 }
 
-func (cfg *App) channelDonated(user_id uuid.UUID, ch chan channel) {
-	ch <- channel{Name: "donated", Val: cfg.getAmountDonated(user_id)}
+func (cfg *App) channelDonated(ctx context.Context, user_id uuid.UUID, ch chan channel) {
+	ch <- channel{Name: "donated", Val: cfg.getAmountDonated(ctx, user_id)}
 }
 
-func (cfg *App) channelEarned(user_id uuid.UUID, ch chan channel) {
-	ch <- channel{Name: "earned", Val: cfg.getAmountEarned(user_id)}
+func (cfg *App) channelEarned(ctx context.Context, user_id uuid.UUID, ch chan channel) {
+	ch <- channel{Name: "earned", Val: cfg.getAmountEarned(ctx, user_id)}
 }
 
-func (cfg *App) channelPercent(user_id uuid.UUID, ch chan channel) {
-	ch <- channel{Name: "percent", Val: cfg.getDonationPercent(user_id)}
+func (cfg *App) channelPercent(ctx context.Context, user_id uuid.UUID, ch chan channel) {
+	ch <- channel{Name: "percent", Val: cfg.getDonationPercent(ctx, user_id)}
 }
 
-func (cfg *App) channelAll(user_id uuid.UUID) (owed float64, fulfilled float64, remaining float64, donated float64, earned float64, percent float64) {
+func (cfg *App) channelAll(ctx context.Context, user_id uuid.UUID) (owed float64, fulfilled float64, remaining float64, donated float64, earned float64, percent float64) {
 	ch := make(chan channel, 6)
 
-	go cfg.channelAmntOwed(user_id, ch)
-	go cfg.channelAmntFulfilled(user_id, ch)
-	go cfg.channelDonated(user_id, ch)
-	go cfg.channelEarned(user_id, ch)
-	go cfg.channelPercent(user_id, ch)
+	go cfg.channelAmntOwed(ctx, user_id, ch)
+	go cfg.channelAmntFulfilled(ctx, user_id, ch)
+	go cfg.channelDonated(ctx, user_id, ch)
+	go cfg.channelEarned(ctx, user_id, ch)
+	go cfg.channelPercent(ctx, user_id, ch)
 
 	for i := 0; i < 5; i++ {
 		f := <-ch
@@ -65,7 +66,7 @@ func (cfg *App) channelAll(user_id uuid.UUID) (owed float64, fulfilled float64, 
 	return
 }
 
-func (cfg *App) channelCsv(ch chan job, result chan jobResult, user_id uuid.UUID, percentage float64) {
+func (cfg *App) channelCsv(ctx context.Context, ch chan job, result chan jobResult, user_id uuid.UUID, percentage float64) {
 	for job := range ch {
 
 		row, index := job.data, job.rowIndex
@@ -100,6 +101,7 @@ func (cfg *App) channelCsv(ch chan job, result chan jobResult, user_id uuid.UUID
 		}
 
 		_, err = cfg.executeTemplate(
+			ctx,
 			`INSERT INTO Ledgers
 			(user_id,
 			ledger_entry,

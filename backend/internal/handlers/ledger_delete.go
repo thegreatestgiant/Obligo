@@ -11,13 +11,14 @@ func (cfg *App) deleteEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
 	id := r.PathValue("id")
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
 		return
 	}
 
-	err := cfg.deleteUserEntry(id, user_id)
+	err := cfg.deleteUserEntry(ctx, id, user_id)
 	if err != nil {
 		if err.Error() == "not found or unauthorized" {
 			http.Error(w, "Transaction not found or unauthorized", http.StatusNotFound)

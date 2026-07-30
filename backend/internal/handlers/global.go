@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -52,7 +53,7 @@ func getJti(w http.ResponseWriter, r *http.Request) uuid.UUID {
 	return jti
 }
 
-func (cfg *App) generateTokensWithCookies(w http.ResponseWriter, uuid uuid.UUID) {
+func (cfg *App) generateTokensWithCookies(ctx context.Context, w http.ResponseWriter, uuid uuid.UUID) {
 	token, err := auth.MakeJWT(uuid, cfg.JWT, cfg.Lifetime)
 	if err != nil {
 		log.Println("Couldn't make token")
@@ -64,9 +65,9 @@ func (cfg *App) generateTokensWithCookies(w http.ResponseWriter, uuid uuid.UUID)
 
 	hash := sha256.Sum256([]byte(refreshToken))
 	hashedRefresh := hex.EncodeToString(hash[:])
-	
+
 	expires_at := time.Now().AddDate(0, 0, 60)
-	cfg.addRefresh(hashedRefresh, uuid, expires_at)
+	cfg.addRefresh(ctx, hashedRefresh, uuid, expires_at)
 	log.Printf("Added this Hashed refresh: %v", hashedRefresh)
 
 	jwtCookie := &http.Cookie{

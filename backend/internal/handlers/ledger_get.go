@@ -12,13 +12,14 @@ func (cfg *App) getEntries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
 		return
 	}
 
 	ch, errCh := make(chan Ledger), make(chan error)
-	go cfg.getUserEntries(user_id, ch, errCh)
+	go cfg.getUserEntries(ctx, user_id, ch, errCh)
 	if err, ok := <-errCh; ok && err != nil {
 		http.Error(w, "Failed to retrieve entries", http.StatusInternalServerError)
 		return
@@ -42,6 +43,7 @@ func (cfg *App) getAnEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
 	id := r.PathValue("id")
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
@@ -49,7 +51,7 @@ func (cfg *App) getAnEntry(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Fetching entry ID: %s for User: %s", id, user_id)
 
-	entry, err := cfg.getEntry(id, user_id)
+	entry, err := cfg.getEntry(ctx, id, user_id)
 	if err != nil {
 		log.Printf("Error fetching entry: %v", err)
 		http.Error(w, "Entry not found", http.StatusNotFound)

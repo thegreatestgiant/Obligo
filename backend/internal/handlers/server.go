@@ -17,8 +17,8 @@ import (
 )
 
 func StartServer(cfg *App) {
-	check := func(jti uuid.UUID) bool {
-		return cfg.blacklisted(jti)
+	check := func(ctx context.Context, jti uuid.UUID) bool {
+		return cfg.blacklisted(ctx, jti)
 	}
 
 	mux := http.NewServeMux()

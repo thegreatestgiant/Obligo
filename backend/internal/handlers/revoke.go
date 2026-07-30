@@ -12,13 +12,14 @@ func (cfg *App) revoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
 		return
 	}
 
-	refresh := cfg.getRefresh(user_id)
+	refresh := cfg.getRefresh(ctx, user_id)
 
-	cfg.revokeRefresh(refresh)
+	cfg.revokeRefresh(ctx, refresh)
 	log.Println("Revoked refresh token")
 }

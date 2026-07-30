@@ -32,6 +32,7 @@ func (cfg *App) ImportCSV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
 		return
@@ -69,7 +70,7 @@ func (cfg *App) ImportCSV(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	dups, err := cfg.getDups(user_id, transactionIDs)
+	dups, err := cfg.getDups(ctx, user_id, transactionIDs)
 	if err != nil {
 		log.Printf("DB error checking duplicates: %v", err)
 		http.Error(w, "Database error", http.StatusInternalServerError)
@@ -98,7 +99,7 @@ func (cfg *App) ImportCSV(w http.ResponseWriter, r *http.Request) {
 	// }
 	// defer tx.Rollback()
 
-	percent := cfg.getDonationPercent(user_id)
+	percent := cfg.getDonationPercent(ctx, user_id)
 	percentage := percent / 100
 
 	jobs, errCh := make(chan job, len(records)), make(chan jobResult, len(records))
@@ -124,7 +125,7 @@ func (cfg *App) ImportCSV(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		for range 8 {
-			go cfg.channelCsv(jobs, errCh, user_id, percentage)
+			go cfg.channelCsv(ctx, jobs, errCh, user_id, percentage)
 		}
 	}()
 

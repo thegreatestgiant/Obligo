@@ -24,6 +24,7 @@ func (cfg *App) summaryMonthly(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
 	user_id := getUUID(w, r)
 	if user_id == uuid.Nil {
 		return
@@ -31,7 +32,7 @@ func (cfg *App) summaryMonthly(w http.ResponseWriter, r *http.Request) {
 
 	retrieved, errCh := make(chan monthlySummary), make(chan error, 2)
 
-	go cfg.getMonthlySummary(user_id, retrieved, errCh)
+	go cfg.getMonthlySummary(ctx, user_id, retrieved, errCh)
 	if err := <-errCh; err != nil {
 		log.Printf("Couldn't get monthly summary: %v", err)
 		http.Error(w, "Failed to get monthly Summary", http.StatusInternalServerError)
