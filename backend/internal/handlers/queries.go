@@ -10,6 +10,9 @@ import (
 	"github.com/lib/pq"
 )
 
+// Takes in a query and runs it using the given args
+//
+// Moslty used for Insert (Delete)
 func (cfg *App) executeTemplate(query string, args ...any) (int64, error) {
 	result, err := cfg.DB.Exec(query, args...)
 	if err != nil {
@@ -19,6 +22,9 @@ func (cfg *App) executeTemplate(query string, args ...any) (int64, error) {
 	return result.RowsAffected()
 }
 
+// Takes a query and args, and returns all the matching rows
+//
+// Used by SELECT
 func (cfg *App) queryTemplate(query string, args ...any) (*sql.Rows, error) {
 	rows, err := cfg.DB.Query(query, args...)
 	if err != nil {
@@ -28,6 +34,9 @@ func (cfg *App) queryTemplate(query string, args ...any) (*sql.Rows, error) {
 	return rows, nil
 }
 
+// Takes a query, puts the result in the dest[] and uses the args
+//
+// Mostly used with Select
 func (cfg *App) queryReturnTemplate(query string, dest []any, args ...any) error {
 	err := cfg.DB.QueryRow(query, args...).Scan(dest...)
 	if err != nil {
@@ -39,6 +48,9 @@ func (cfg *App) queryReturnTemplate(query string, dest []any, args ...any) error
 	return nil
 }
 
+// Executes the query with the following feilds
+//
+// Used for Insert and Delete
 func (cfg *App) queryExecTemplate(query string, fields ...any) error {
 	_, err := cfg.DB.Exec(query, fields...)
 	if err != nil {
@@ -115,7 +127,10 @@ func (cfg *App) getDups(user_id uuid.UUID, ids []string) ([]string, error) {
 	return duplicateIDs, nil
 }
 
-func (cfg *App) getUserEntries(user_id uuid.UUID) ([]Ledger, error) {
+func (cfg *App) getUserEntries(user_id uuid.UUID, ch chan Ledger, errCh chan error) {
+	defer close(ch)
+	defer close(errCh)
+
 	query := `SELECT transaction_id, ledger_entry, amount, COALESCE(description,'') AS description, 
 	charity_owed, transaction_date 
 	FROM Ledgers 
@@ -124,11 +139,11 @@ func (cfg *App) getUserEntries(user_id uuid.UUID) ([]Ledger, error) {
 
 	rows, err := cfg.queryTemplate(query, user_id)
 	if err != nil {
-		return nil, err
+		errCh <- err
+		return
 	}
 	defer rows.Close()
-
-	entries := []Ledger{}
+	errCh <- nil
 
 	for rows.Next() {
 		var entry Ledger
@@ -144,15 +159,13 @@ func (cfg *App) getUserEntries(user_id uuid.UUID) ([]Ledger, error) {
 			log.Printf("Couldn't scan row: %v", err)
 			continue
 		}
-		entries = append(entries, entry)
+		ch <- entry
 	}
 
 	if err = rows.Err(); err != nil {
 		log.Printf("Error iterating rows: %v", err)
-		return nil, err
+		errCh <- err
 	}
-
-	return entries, nil
 }
 
 func (cfg *App) getMonthlySummary(user_id uuid.UUID) ([]monthlySummary, error) {

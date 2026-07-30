@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -16,6 +14,17 @@ type importResult struct {
 	Inserted int    `json:"inserted"`
 	Skipped  int    `json:"skipped"`
 	Message  string `json:"msg,omitempty"`
+}
+
+type job struct {
+	rowIndex int
+	data     []string
+}
+
+type jobResult struct {
+	success bool
+	message string
+	code    int
 }
 
 func (cfg *App) ImportCSV(w http.ResponseWriter, r *http.Request) {
@@ -81,16 +90,19 @@ func (cfg *App) ImportCSV(w http.ResponseWriter, r *http.Request) {
 		dupMap[id] = true
 	}
 
-	tx, err := cfg.DB.BeginTx(r.Context(), nil)
-	if err != nil {
-		log.Printf("DB error: %v", err)
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-	defer tx.Rollback()
+	// tx, err := cfg.DB.BeginTx(r.Context(), nil)
+	// if err != nil {
+	// 	log.Printf("DB error: %v", err)
+	// 	http.Error(w, "Database error", http.StatusInternalServerError)
+	// 	return
+	// }
+	// defer tx.Rollback()
 
 	percent := cfg.getDonationPercent(user_id)
 	percentage := percent / 100
+
+	jobs, errCh := make(chan job, len(records)), make(chan jobResult, len(records))
+	jobCounter := 0
 
 	for i, row := range records {
 		if len(row) > 0 && dupMap[row[0]] {
@@ -102,56 +114,28 @@ func (cfg *App) ImportCSV(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Row %d is missing columns. Please check your CSV format.", i+2), http.StatusBadRequest)
 			return
 		}
-
-		var parsedDate time.Time
-		var parseErr error
-		dateStr := row[4]
-		if dateStr == "" {
-			parsedDate = time.Now()
-		} else {
-			parsedDate, parseErr = time.Parse(time.RFC3339, dateStr)
-			if parseErr != nil {
-				errorMsg := fmt.Sprintf("Invalid date format on row %d: %v", i+2, parseErr)
-				log.Println(errorMsg)
-				http.Error(w, errorMsg, http.StatusBadRequest)
-				return
-			}
+		jobs <- job{
+			rowIndex: i,
+			data:     row,
 		}
-
-		amount, err := strconv.ParseFloat(row[2], 64)
-		if err != nil {
-			log.Printf("Invalid amount: %v", err)
-			http.Error(w, fmt.Sprintf("Invalid amount on row %d", i+2), http.StatusBadRequest)
-			return
-		}
-
-		charity_owed := amount * percentage
-		if row[1] == string(Donation) {
-			charity_owed = 0
-		}
-
-		_, err = tx.ExecContext(r.Context(),
-			`INSERT INTO Ledgers
-			(user_id,
-			ledger_entry,
-			amount,
-			description,
-			charity_owed,
-			transaction_date)
-			VALUES ($1, $2, $3, $4, $5, $6)`,
-			user_id, row[1], amount, row[3], charity_owed, parsedDate)
-		if err != nil {
-			log.Printf("Couldn't insert: %v", err)
-			http.Error(w, "Failed to insert record", http.StatusInternalServerError)
-			return
-		}
-		result.Inserted++
+		jobCounter++
 	}
+	close(jobs)
 
-	if err := tx.Commit(); err != nil {
-		log.Printf("Couldn't save data: %v", err)
-		http.Error(w, "Failed to save data", http.StatusInternalServerError)
-		return
+	go func() {
+		for range 8 {
+			go cfg.channelCsv(jobs, errCh, user_id, percentage)
+		}
+	}()
+
+	for range jobCounter {
+		err := <-errCh
+		if err.success {
+			result.Inserted++
+		} else {
+			http.Error(w, err.message, err.code)
+			return
+		}
 	}
 
 	log.Printf("Inserted %d rows", result.Inserted)

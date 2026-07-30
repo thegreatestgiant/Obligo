@@ -120,4 +120,53 @@ func TestCSVExportAndImport(t *testing.T) {
 			t.Fatalf("Expected 2 inserted rows, got %d", result.Inserted)
 		}
 	})
+
+	// --- TEST 3: IMPORT LARGE CSV (WORKER POOL TEST) ---
+	t.Run("Test Import Large CSV", func(t *testing.T) {
+		// Create a mock CSV file in memory with 10 rows (more than 8 workers)
+		csvData := `transaction_id,ledger_entry,amount,description,transaction_date
+,paycheck,10.00,Worker Test 1,
+,paycheck,10.00,Worker Test 2,
+,paycheck,10.00,Worker Test 3,
+,paycheck,10.00,Worker Test 4,
+,paycheck,10.00,Worker Test 5,
+,paycheck,10.00,Worker Test 6,
+,paycheck,10.00,Worker Test 7,
+,paycheck,10.00,Worker Test 8,
+,paycheck,10.00,Worker Test 9,
+,paycheck,10.00,Worker Test 10,
+`
+		// Prepare the multipart form data
+		body := new(bytes.Buffer)
+		writer := multipart.NewWriter(body)
+		part, err := writer.CreateFormFile("file", "import_large.csv")
+		if err != nil {
+			t.Fatalf("Failed to create form file: %v", err)
+		}
+		part.Write([]byte(csvData))
+		writer.Close()
+
+		// Build the request
+		req := httptest.NewRequest(http.MethodPost, "/entries/import", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.AddCookie(sessionCookie)
+
+		rrImport := httptest.NewRecorder()
+		mux.ServeHTTP(rrImport, req)
+
+		if rrImport.Code != http.StatusOK {
+			t.Fatalf("Import failed with status %d. Body: %s", rrImport.Code, rrImport.Body.String())
+		}
+
+		var result importResult
+		if err := json.NewDecoder(rrImport.Body).Decode(&result); err != nil {
+			t.Fatalf("Failed to decode import result: %v", err)
+		}
+
+		// We imported 10 rows
+		if result.Inserted != 10 {
+			t.Fatalf("Expected 10 inserted rows, got %d", result.Inserted)
+		}
+	})
 }
+

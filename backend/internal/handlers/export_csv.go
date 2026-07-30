@@ -20,8 +20,9 @@ func (cfg *App) ExportCSV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries, err := cfg.getUserEntries(user_id)
-	if err != nil {
+	ch, errCh := make(chan Ledger), make(chan error)
+	go cfg.getUserEntries(user_id, ch, errCh)
+	if err, ok := <-errCh; ok && err != nil {
 		log.Printf("Failed to get entries: %v", err)
 		http.Error(w, "Failed to fetch entries", http.StatusInternalServerError)
 		return
@@ -41,7 +42,11 @@ func (cfg *App) ExportCSV(w http.ResponseWriter, r *http.Request) {
 		"transaction_date",
 	})
 
-	for _, entry := range entries {
+	for {
+		entry, ok := <-ch
+		if !ok {
+			break
+		}
 		row := []string{
 			fmt.Sprintf("%d", entry.TransactionID),
 			string(entry.LedgerEntry),

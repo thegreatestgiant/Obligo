@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"log"
-	"math"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -26,13 +25,8 @@ func (cfg *App) summary(w http.ResponseWriter, r *http.Request) {
 	if user_id == uuid.Nil {
 		return
 	}
-	owed := cfg.getAmountOwed(user_id)
-	fulfilled := cfg.getAmountFulfilled(user_id)
-	remaining := owed - ((math.Min(100, fulfilled) / 100) * owed)
-	remaining = math.Round(remaining*100) / 100
-	donated := cfg.getAmountDonated(user_id)
-	earned := cfg.getAmountEarned(user_id)
-	percent := cfg.getDonationPercent(user_id)
+
+	owed, fulfilled, remaining, donated, earned, percent := cfg.channelAll(user_id)
 
 	summary := summary{
 		TotalOwed:           owed,

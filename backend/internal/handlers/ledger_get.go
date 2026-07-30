@@ -17,8 +17,19 @@ func (cfg *App) getEntries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries, err := cfg.getUserEntries(user_id)
-	if err != nil {
+	ch, errCh := make(chan Ledger), make(chan error)
+	go cfg.getUserEntries(user_id, ch, errCh)
+	if err, ok := <-errCh; ok && err != nil {
+		http.Error(w, "Failed to retrieve entries", http.StatusInternalServerError)
+		return
+	}
+
+	var entries []Ledger
+	for entry := range ch {
+		entries = append(entries, entry)
+	}
+
+	if err, ok := <-errCh; ok && err != nil {
 		http.Error(w, "Failed to retrieve entries", http.StatusInternalServerError)
 		return
 	}
