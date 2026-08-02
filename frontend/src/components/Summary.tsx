@@ -85,9 +85,9 @@ export default function Summary() {
         />
         <KPICard
           intent="obligation"
-          title="Obligation"
-          value={formatCurrency(totalOwed)}
-          subtext={`${formatCurrency(remaining)} remaining`}
+          title="Remaining Obligation"
+          value={formatCurrency(remaining)}
+          subtext={`${formatCurrency(totalOwed)} total obligation`}
           percent={percentOwed + "%"}
         />
       </div>

@@ -6,11 +6,8 @@ import (
 )
 
 func (cfg *App) Cleanup(ch <-chan time.Time) {
-	for {
-		select {
-		case <-ch:
-			cfg.deleteExpiredJTI(context.Background())
-			cfg.deleteExpiredRefresh(context.Background())
-		}
+	for range ch {
+		cfg.deleteExpiredJTI(context.Background())
+		cfg.deleteExpiredRefresh(context.Background())
 	}
 }
