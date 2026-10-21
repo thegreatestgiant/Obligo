@@ -37,7 +37,7 @@ func main() {
 	cfg := &handlers.App{
 		DB:       db,
 		JWT:      []byte(secret),
-		Lifetime: time.Hour * 24,
+		Lifetime: time.Hour * 24 * 7,
 	}
 
 	go cfg.Cleanup(time.Tick(cfg.Lifetime))

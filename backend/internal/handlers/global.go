@@ -77,6 +77,7 @@ func (cfg *App) generateTokensWithCookies(ctx context.Context, w http.ResponseWr
 		Secure:   true,
 		SameSite: http.SameSiteNoneMode,
 		Path:     "/",
+		MaxAge:   int(cfg.Lifetime.Seconds()),
 	}
 	refreshCookie := &http.Cookie{
 		Name:     "refresh_token",
